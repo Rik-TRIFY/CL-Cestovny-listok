@@ -17,6 +17,10 @@ class SpravcaVerzie {
         }
     }
 
+    public function inicializuj(): void {
+        $this->nastavZakladneNastavenia();
+    }
+
     private function aktualizacia(string $stara_verzia): void {
         global $wpdb;
         

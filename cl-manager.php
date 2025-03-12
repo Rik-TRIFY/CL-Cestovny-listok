@@ -121,9 +121,9 @@ class CestovneListky {
         // Vytvorenie databázových tabuliek
         $this->vytvorTabulky();
 
-        // Základné nastavenia
-        $nastavenia = new jadro\SpravcaVerzie();
-        $nastavenia->nastavZakladneNastavenia();
+        // Základné nastavenia - zmenené na public metódu
+        $spravca = new jadro\SpravcaVerzie();
+        $spravca->inicializuj();  // Nová public metóda namiesto privátnej
 
         // Aktivácia kontrol
         $kontroler = new jadro\Kontroler();
@@ -153,37 +153,39 @@ class CestovneListky {
     
     private function vytvorTabulky(): void {
         global $wpdb;
-    
         $charset_collate = $wpdb->get_charset_collate();
     
-        // Vytvorenie tabuliek s prepared statements
-        $sql1 = $wpdb->prepare("CREATE TABLE IF NOT EXISTS `CL-typy_listkov` (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            nazov varchar(100) NOT NULL,
-            cena decimal(10,2) NOT NULL,
-            aktivny boolean DEFAULT TRUE,
-            vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
-            aktualizovane datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY  (id)
-        ) %s", $charset_collate);
+        $sql = [
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_typy_listkov` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                nazov varchar(100) NOT NULL,
+                cena decimal(10,2) NOT NULL,
+                aktivny boolean DEFAULT TRUE,
+                vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
+                aktualizovane datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY  (id)
+            ) $charset_collate",
     
-        $sql2 = $wpdb->prepare("CREATE TABLE IF NOT EXISTS `CL-predaj` (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            typ_listka_id mediumint(9) NOT NULL,
-            pocet int(11) NOT NULL,
-            celkova_cena decimal(10,2) NOT NULL,
-            predajca_id bigint(20) NOT NULL,
-            datum_predaja datetime DEFAULT CURRENT_TIMESTAMP,
-            storno boolean DEFAULT FALSE,
-            PRIMARY KEY  (id),
-            KEY `typ_listka_id` (`typ_listka_id`),
-            KEY `predajca_id` (`predajca_id`),
-            CONSTRAINT `fk_typ_listka` FOREIGN KEY (`typ_listka_id`) REFERENCES `CL-typy_listkov` (`id`)
-        ) %s", $charset_collate);
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_predaj` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                typ_listka_id mediumint(9) NOT NULL,
+                pocet int(11) NOT NULL,
+                celkova_cena decimal(10,2) NOT NULL,
+                predajca_id bigint(20) NOT NULL,
+                datum_predaja datetime DEFAULT CURRENT_TIMESTAMP,
+                storno boolean DEFAULT FALSE,
+                PRIMARY KEY  (id),
+                KEY `typ_listka_id` (`typ_listka_id`),
+                KEY `predajca_id` (`predajca_id`),
+                CONSTRAINT `fk_typ_listka` FOREIGN KEY (`typ_listka_id`) 
+                REFERENCES `{$wpdb->prefix}cl_typy_listkov` (`id`)
+            ) $charset_collate"
+        ];
     
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql1);
-        dbDelta($sql2);
+        foreach ($sql as $query) {
+            dbDelta($query);
+        }
     }
     
     public function adminMenu(): void {
