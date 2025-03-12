@@ -7,26 +7,28 @@ if (!defined('ABSPATH')) exit;
     <h1>Export dát</h1>
     
     <div class="cl-export-container">
-        <div class="cl-export-box">
-            <h2>Export predajov</h2>
-            <form id="export-predaje" class="cl-export-form">
-                <input type="hidden" name="typ" value="predaje">
-                <div class="form-field">
-                    <label>Časové obdobie:</label>
-                    <input type="date" name="od" required>
-                    <span>-</span>
-                    <input type="date" name="do" required>
-                </div>
-                <div class="form-field">
-                    <label>Formát:</label>
-                    <select name="format">
-                        <option value="xlsx">Excel (XLSX)</option>
-                        <option value="csv">CSV</option>
-                        <option value="pdf">PDF</option>
-                    </select>
-                </div>
-                <button type="submit" class="button button-primary">Exportovať</button>
-            </form>
-        </div>
+        <form method="post">
+            <?php wp_nonce_field('cl_export_nonce'); ?>
+            
+            <h3>Export predajov</h3>
+            <div class="cl-export-options">
+                <label>
+                    <input type="radio" name="format" value="csv" checked /> CSV
+                </label>
+                <label>
+                    <input type="radio" name="format" value="xlsx" /> XLSX
+                </label>
+                <label>
+                    <input type="radio" name="format" value="pdf" /> PDF
+                </label>
+            </div>
+            
+            <div class="cl-export-dates">
+                <label>Od: <input type="date" name="datum_od" required /></label>
+                <label>Do: <input type="date" name="datum_do" required /></label>
+            </div>
+            
+            <button type="submit" name="cl_export" class="button button-primary">Exportovať dáta</button>
+        </form>
     </div>
 </div>

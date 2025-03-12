@@ -4,17 +4,22 @@ declare(strict_types=1);
 namespace CL\POS;
 
 class Terminal {
+    private \CL\jadro\Databaza $databaza;
+
     public function __construct() {
+        $this->databaza = new \CL\jadro\Databaza();
         add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'pridajDoKosika']);
         add_action('wp_ajax_cl_odstran_z_kosika', [$this, 'odstranZKosika']);
         add_action('wp_ajax_cl_dokonci_predaj', [$this, 'dokonciPredaj']);
     }
 
     public function zobrazTerminal(): void {
-        if (!current_user_can('manage_options')) {
-            wp_die('Nedostatočné oprávnenia');
+        if (!is_user_logged_in()) {
+            wp_die('Nemáte dostatočné oprávnenia na zobrazenie terminálu.');
         }
-        include CL_INCLUDES_DIR . 'pos/pohlady/terminal.php';
+        
+        $predajca = wp_get_current_user();
+        require CL_INCLUDES_DIR . 'pos/pohlady/terminal.php';
     }
 
     public function pridajDoKosika(): void {

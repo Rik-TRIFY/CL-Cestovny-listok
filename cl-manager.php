@@ -73,6 +73,7 @@ class CestovneListky {
         register_activation_hook(__FILE__, [$this, 'aktivacia']);
         add_action('admin_menu', [$this, 'adminMenu']);
         add_action('admin_enqueue_scripts', [$this, 'pridajAssets']);
+        add_shortcode('pos_terminal', [$this, 'zobrazPOSTerminalShortcode']);
         
         new jadro\Databaza();
         new admin\Nastavenia();
@@ -189,22 +190,26 @@ class CestovneListky {
     }
     
     public function adminMenu(): void {
+        global $menu;
         add_menu_page(
             'Cestovné lístky',
             'Cestovné lístky',
             'manage_options',
             'cl-manager',
-            [$this, 'zobrazPOSTerminal'],
-            'dashicons-tickets-alt'
+            [$this, 'zobrazDashboard'],
+            'dashicons-tickets-alt',
+            0
         );
+        
+        $menu[1] = array('', 'read', 'separator1', '', 'wp-menu-separator');
     
         add_submenu_page(
             'cl-manager',
-            'POS Terminál',
-            'POS Terminál',
+            'Prehľad',
+            'Prehľad',
             'manage_options',
             'cl-manager',
-            [$this, 'zobrazPOSTerminal']
+            [$this, 'zobrazDashboard']
         );
     
         add_submenu_page(
@@ -216,6 +221,7 @@ class CestovneListky {
             [$this, 'zobrazSpravuListkov']
         );
 
+        // História predaja
         add_submenu_page(
             'cl-manager',
             'História predaja',
@@ -227,11 +233,29 @@ class CestovneListky {
 
         add_submenu_page(
             'cl-manager',
+            'Štatistiky',
+            'Štatistiky',
+            'manage_options',
+            'cl-statistiky',
+            [$this, 'zobrazStatistiky']
+        );
+
+        add_submenu_page(
+            'cl-manager',
             'Export dát',
             'Export dát',
             'manage_options',
             'cl-export',
             [$this, 'zobrazExport']
+        );
+
+        add_submenu_page(
+            'cl-manager',
+            'Import dát',
+            'Import dát',
+            'manage_options',
+            'cl-import',
+            [$this, 'zobrazImport']
         );
 
         add_submenu_page(
@@ -251,6 +275,15 @@ class CestovneListky {
             'cl-nastavenia',
             [$this, 'zobrazNastavenia']
         );
+
+        add_submenu_page(
+            'cl-manager',
+            'Systémové logy',
+            'Systémové logy',
+            'manage_options',
+            'cl-logy',
+            [$this, 'zobrazLogy']
+        );
     }
 
     public function pridajAssets(): void {
@@ -262,6 +295,9 @@ class CestovneListky {
         wp_enqueue_style('cl-export', CL_ASSETS_URL . 'css/export.css', [], CL_VERSION);
         wp_enqueue_style('cl-notifikacie', CL_ASSETS_URL . 'css/notifikacie.css', [], CL_VERSION);
         
+        // Pridáme nové CSS súbory
+        wp_enqueue_style('cl-historia', CL_ASSETS_URL . 'css/historia.css', [], CL_VERSION);
+        
         // JavaScript
         wp_enqueue_script('cl-common', CL_ASSETS_URL . 'js/common.js', [], CL_VERSION, true);
         wp_enqueue_script('cl-admin', CL_ASSETS_URL . 'js/admin.js', ['jquery'], CL_VERSION, true);
@@ -270,6 +306,10 @@ class CestovneListky {
         wp_enqueue_script('cl-prehlad', CL_ASSETS_URL . 'js/prehlad.js', ['jquery'], CL_VERSION, true);
         wp_enqueue_script('cl-export', CL_ASSETS_URL . 'js/export.js', ['jquery'], CL_VERSION, true);
         wp_enqueue_script('cl-tlac', CL_ASSETS_URL . 'js/tlac.js', ['jquery'], CL_VERSION, true);
+        
+        // Pridáme nové JavaScript súbory
+        wp_enqueue_script('cl-historia', CL_ASSETS_URL . 'js/historia.js', ['jquery'], CL_VERSION, true);
+        wp_enqueue_script('cl-zalohy', CL_ASSETS_URL . 'js/zalohy.js', ['jquery'], CL_VERSION, true);
         
         // Lokalizácia premenných pre JavaScript
         wp_localize_script('cl-admin', 'cl_admin', [
@@ -280,6 +320,10 @@ class CestovneListky {
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('cl_pos_nonce')
         ]);
+    }
+
+    public function zobrazDashboard(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/dashboard.php';
     }
 
     public function zobrazPOSTerminal(): void {
@@ -304,6 +348,40 @@ class CestovneListky {
 
     public function zobrazZalohy(): void {
         require_once CL_INCLUDES_DIR . 'admin/pohlady/zalohy.php';
+    }
+
+    public function zobrazPredajcov(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/predajcovia.php';
+    }
+
+    public function zobrazStatistiky(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/statistiky.php';
+    }
+
+    public function zobrazImport(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/import.php';
+    }
+
+    public function zobrazLogy(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/logy.php';
+    }
+
+    public function zobrazPOSTerminalShortcode($atts): string {
+        if (!is_user_logged_in()) {
+            return '<p>Pre prístup k POS terminálu sa musíte prihlásiť.</p>';
+        }
+
+        // Načítame assets pre terminál
+        wp_enqueue_style('cl-terminal', CL_ASSETS_URL . 'css/terminal.css', [], CL_VERSION);
+        wp_enqueue_script('cl-terminal', CL_ASSETS_URL . 'js/terminal.js', ['jquery'], CL_VERSION, true);
+        wp_localize_script('cl-terminal', 'cl_pos', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('cl_pos_nonce')
+        ]);
+
+        ob_start();
+        (new POS\Terminal())->zobrazTerminal();
+        return ob_get_clean();
     }
 }
 

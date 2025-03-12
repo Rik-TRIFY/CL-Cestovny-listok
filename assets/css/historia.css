@@ -1,0 +1,22 @@
+.cl-historia-filter {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.cl-storno {
+    color: #dc3232;
+    font-weight: bold;
+}
+
+.cl-aktivne {
+    color: #46b450;
+    font-weight: bold;
+}
+
+.cl-pagination {
+    margin-top: 20px;
+    display: flex;
+    gap: 5px;
+}
