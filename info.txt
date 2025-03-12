@@ -1,3 +1,5 @@
+https://github.com/Rik-TRIFY/CL-Cestovny-listok
+
 ŠTRUKTÚRA SYSTÉMU PRE PREDAJ CESTOVNÝCH LÍSTKOV
 ==============================================
 

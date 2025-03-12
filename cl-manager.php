@@ -32,15 +32,26 @@ if (!defined('DB_BACKUP_USER')) define('DB_BACKUP_USER', DB_USER);
 if (!defined('DB_BACKUP_PASSWORD')) define('DB_BACKUP_PASSWORD', DB_PASSWORD);
 if (!defined('DB_BACKUP_NAME')) define('DB_BACKUP_NAME', DB_NAME . '_backup');
 
-// Namiesto require_once 'vendor/autoload.php' použijeme vlastný autoloader
+// Upravený autoloader
 spl_autoload_register(function ($class) {
+    // Kontrola či ide o náš namespace
     if (strpos($class, 'CL\\') === 0) {
-        $class_path = str_replace('CL\\', '', $class);
-        $file = CL_INCLUDES_DIR . str_replace('\\', '/', $class_path) . '.php';
+        // Odstránime namespace prefix
+        $relative_class = substr($class, strlen('CL\\'));
+        
+        // Vytvoríme cestu k súboru
+        $file = CL_PLUGIN_DIR . 'includes/' . str_replace('\\', '/', $relative_class) . '.php';
+        
+        // Debug log pre sledovanie načítavania tried
+        error_log("Loading class $class from file $file");
+        
+        // Ak súbor existuje, načítame ho
         if (file_exists($file)) {
             require_once $file;
+            return true;
         }
     }
+    return false;
 });
 
 class CestovneListky {
@@ -63,12 +74,12 @@ class CestovneListky {
         add_action('admin_menu', [$this, 'adminMenu']);
         add_action('admin_enqueue_scripts', [$this, 'pridajAssets']);
         
-        new Jadro\Databaza();
-        new Admin\Nastavenia();
-        new POS\Terminal();
-        new Admin\AdminRozhranie();
-        new Jadro\SpravcaVerzie();
-        new Jadro\Router();  // Pridané
+        new jadro\Databaza();
+        new admin\Nastavenia();
+        new pos\Terminal();
+        new admin\AdminRozhranie();
+        new jadro\SpravcaVerzie();
+        new jadro\Router();
     }
     
     private function vytvorPriecinky(): void {
@@ -111,11 +122,11 @@ class CestovneListky {
         $this->vytvorTabulky();
 
         // Základné nastavenia
-        $nastavenia = new Jadro\SpravcaVerzie();
+        $nastavenia = new jadro\SpravcaVerzie();
         $nastavenia->nastavZakladneNastavenia();
 
         // Aktivácia kontrol
-        $kontroler = new Jadro\Kontroler();
+        $kontroler = new jadro\Kontroler();
         $kontroler->aktivujKontroly();
     }
     
