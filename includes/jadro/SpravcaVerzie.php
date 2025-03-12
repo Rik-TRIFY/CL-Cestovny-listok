@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CL\Jadro;
+namespace CL\jadro;
 
 class SpravcaVerzie {
     public function __construct() {
