@@ -26,8 +26,8 @@ define('CL_ASSETS_URL', plugin_dir_url(__FILE__) . 'assets/');
 define('CL_PREDAJ_DIR', CL_INCLUDES_DIR . 'predaj/');
 define('CL_LOGS_DIR', CL_INCLUDES_DIR . 'logy/');
 
-// Konfigurácia záložnej databázy
-if (!defined('DB_BACKUP_HOST')) define('DB_BACKUP_HOST', 'localhost');
+// Konfigurácia záložnej databázy - použijeme hlavné prihlasovacie údaje
+if (!defined('DB_BACKUP_HOST')) define('DB_BACKUP_HOST', DB_HOST);
 if (!defined('DB_BACKUP_USER')) define('DB_BACKUP_USER', DB_USER);
 if (!defined('DB_BACKUP_PASSWORD')) define('DB_BACKUP_PASSWORD', DB_PASSWORD);
 if (!defined('DB_BACKUP_NAME')) define('DB_BACKUP_NAME', DB_NAME . '_backup');
