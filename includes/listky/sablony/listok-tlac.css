@@ -1,0 +1,46 @@
+@media print {
+    @page {
+        margin: 0;
+        size: 54mm auto;
+    }
+    
+    body {
+        margin: 2mm;
+        font-family: 'Arial', sans-serif;
+        font-size: 9pt;
+    }
+    
+    .logo {
+        max-width: 50mm;
+        margin: 0 auto;
+        display: block;
+    }
+    
+    .hlavicka, .paticka {
+        text-align: center;
+        margin: 2mm 0;
+        font-size: 8pt;
+    }
+    
+    .polozky {
+        margin: 3mm 0;
+    }
+    
+    .polozka {
+        display: flex;
+        justify-content: space-between;
+        margin: 1mm 0;
+    }
+    
+    .suma {
+        border-top: 1px solid #000;
+        margin-top: 2mm;
+        padding-top: 2mm;
+        font-weight: bold;
+    }
+    
+    .info {
+        margin-top: 3mm;
+        font-size: 8pt;
+    }
+}

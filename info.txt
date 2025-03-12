@@ -1,0 +1,283 @@
+ŠTRUKTÚRA SYSTÉMU PRE PREDAJ CESTOVNÝCH LÍSTKOV
+==============================================
+
+1. HLAVNÉ KOMPONENTY
+-------------------
+cl-manager.php
+- Hlavný súbor pluginu
+- Inicializácia systému a autoloading tried
+- Definícia konštánt a ciest
+- Vytvorenie admin menu
+- Kontrola požiadaviek (PHP 8.1+, WP 6.7.2+)
+
+2. JADRO SYSTÉMU (/includes/jadro/)
+--------------------------------
+Databaza.php
+- Správa databázových tabuliek:
+  * CL-typy_listkov (typy lístkov, ceny)
+  * CL-predaj (hlavička predaja, číslo RRRRMMDD-XXXX)
+  * CL-polozky_predaja (položky predaja)
+
+SpravcaSuborov.php
+- Ukladanie HTML lístkov do /predaj/
+- Logovanie operácií do denných logov
+- Formát čísla lístka: RRRRMMDD-XXXX (napr. 20240215-0001)
+
+3. POS TERMINÁL (/includes/pos/)
+-----------------------------
+Terminal.php
+- Spracovanie predaja
+- AJAX endpointy pre košík
+- Generovanie unikátneho čísla lístka
+- Ukladanie do DB a generovanie HTML
+- Logovanie operácií
+
+/pohlady/
+- terminal.php (zobrazenie tlačidiel pre lístky)
+- kosik.php (správa položiek v košíku)
+
+4. SPRÁVA LÍSTKOV (/includes/listky/)
+----------------------------------
+Generator.php
+- Generovanie HTML pre tlač (šírka 54mm)
+- Hlavička s logom a údajmi
+- Položky predaja s cenami
+- Pätička s čislom lístka
+
+/sablony/
+- listok-hlavicka.php (logo, hlavička)
+- listok-obsah.php (položky, ceny, číslo lístka)
+- listok-paticka.php (pätička)
+
+5. ADMINISTRÁCIA (/includes/admin/)
+--------------------------------
+Nastavenia.php
+- Správa nastavení pluginu
+- Konfigurácia loga, hlavičky a pätičky lístkov
+- Nastavenia cien a typov lístkov
+
+/pohlady/
+- nastavenia-formular.php (konfigurácia)
+- historia-predaja.php (zoznam predajov s filtrami)
+
+6. DÁTOVÉ ÚLOŽISKÁ
+----------------
+/predaj/
+- HTML súbory lístkov (listok-RRRRMMDD-XXXX.html)
+- Prístupné pre zobrazenie/tlač
+
+/logy/
+- Denné logy operácií (operacie-RRRR-MM-DD.log)
+- Logovanie všetkých predajov a operácií
+
+7. ASSETS
+--------
+/css/
+- terminal.css (štýly POS terminálu)
+- admin.css (štýly admin rozhrania)
+
+/js/
+- terminal.js (košík, predaj, tlač)
+- admin.js (nastavenia, náhľady)
+
+8. WORKFLOW PREDAJA
+-----------------
+1. Výber lístkov do košíka:
+   - Každé kliknutie na tlačidlo pridá jeden lístok
+   - Viacnásobné kliknutie = viac kusov toho istého lístka
+   - Automatické zlučovanie rovnakých typov lístkov v košíku
+   - Vizuálna spätná väzba pri kliknutí (animácia tlačidla)
+
+2. Správa košíka:
+   - Zobrazenie zlúčených položiek s celkovým počtom
+   - Možnosť odstrániť položky
+   - Automatický prepočet celkovej sumy
+   - Prehľadné zobrazenie počtu kusov pri každej položke
+
+3. Dokončenie predaja (TOTAL):
+   - Generovanie čísla lístka (RRRRMMDD-XXXX)
+   - Uloženie do databázy
+   - Generovanie HTML lístka
+   - Uloženie do /predaj/
+   - Zápis do denného logu
+   - Otvorenie okna pre tlač
+
+9. ZABEZPEČENIE
+-------------
+- Kontrola oprávnení používateľa
+- AJAX nonce pre všetky operácie
+- Ochrana priečinkov (.htaccess)
+- Validácia vstupov
+- Transakčné spracovanie v DB
+
+10. TECHNICKÉ POŽIADAVKY
+----------------------
+- PHP 8.1+
+- WordPress 6.7.2+
+- Podpora pre tlačiarne 54mm
+- Responzívny dizajn
+- Optimalizácia pre mobilné zariadenia
+
+11. POUŽÍVATEĽSKÉ ROZHRANIE
+-------------------------
+POS Terminál:
+- Veľké, dobre čitateľné tlačidlá pre lístky
+- Okamžitá odozva pri kliknutí
+- Jasné zobrazenie počtu vybraných lístkov
+- Prehľadný košík s celkovou sumou
+- Optimalizácia pre dotykovú obrazovku
+
+Správa položiek:
+- Jednoduchý proces pridávania lístkov
+- Rýchle zadanie viacerých kusov opakovaným kliknutím
+- Minimalizácia potreby manuálnych úprav
+- Intuitívne ovládanie pre obsluhu
+
+12. PREHĽAD A HISTÓRIA
+--------------------
+Funkcionalita prehľadu:
+- Zobrazenie predaných lístkov podľa dátumu
+- Filtrovanie pomocou dátumového rozhrania
+- Detailný pohľad na každý lístok
+- Možnosť opätovnej tlače lístka
+- Automatické stránkovanie (50 záznamov na stranu)
+
+Zobrazované informácie:
+- Číslo lístka (RRRRMMDD-XXXX)
+- Dátum a čas predaja
+- Meno predajcu
+- Celková suma
+- Zoznam položiek s počtami
+- Odkaz na HTML verziu lístka
+
+Správa rozdielov v databázach:
+- Automatická detekcia rozdielov
+- Notifikácie pre administrátora
+- Možnosť manuálneho výberu správnej verzie
+- Logovanie všetkých synchronizácií
+- Pravidelné kontroly integrity
+
+13. ŠTRUKTÚRA DATABÁZ
+-------------------
+Redundantné uloženie:
+- Hlavná databáza (primary)
+- Záložná databáza (backup)
+- Automatická synchronizácia
+- Kontrola integrity dát
+- Logovanie zmien
+
+14. TYPY SÚBOROV
+--------------
+Generované súbory:
+- HTML lístky (/predaj/listok-RRRRMMDD-XXXX.html)
+- Systémové logy (/logy/system-RRRR-MM-DD.log)
+- Logy predaja (/logy/predaj-RRRR-MM-DD.log)
+
+15. UŽÍVATEĽSKÉ ROZHRANIE
+-----------------------
+Prehľad lístkov:
+- Responzívna tabuľka
+- Filtrovanie podľa dátumu
+- Možnosť zobrazenia detailu
+- Tlačidlá pre tlač a náhľad
+- Modal okno pre detail lístka
+
+16. EXPORT DÁT
+------------
+Podporované formáty:
+- PDF (pomocou TCPDF)
+- Excel (XLSX pomocou PHPSpreadsheet)
+- CSV (vlastná implementácia)
+
+Typy exportov:
+- Denné predaje
+- Mesačné štatistiky
+- Prehľad podľa typov lístkov
+- Sumárne reporty
+
+17. TLAČ A EXPORT
+---------------
+PDF Export:
+- Konfigurovateľná hlavička/pätička
+- Podporované vlastné logo
+- Nastaviteľná veľkosť papiera
+- Profesionálny vzhľad dokumentov
+
+Excel Export:
+- Formátované bunky
+- Automatické súčty
+- Filtrovateľné stĺpce
+- Viacero hárkov pre rôzne pohľady
+
+18. TLAČOVÉ NASTAVENIA
+--------------------
+Podporované šírky:
+- 54mm (štandardná pokladničná tlačiareň)
+- 80mm (alternatívna možnosť)
+
+Konfigurácia tlače:
+- Logo (nastaviteľná veľkosť)
+- Hlavička (konfigurovateľný text)
+- Pätička (konfigurovateľný text)
+- Automatická tlač po predaji
+- Opakovateľná tlač z histórie
+
+19. BEZPEČNOSŤ A PRÁVA
+--------------------
+Kontrola oprávnení:
+- Predaj lístkov (manage_options)
+- Správa nastavení (manage_options)
+- Prístup k histórii (manage_options)
+- Export dát (manage_options)
+
+Zabezpečenie súborov:
+- Ochrana priečinkov pomocou .htaccess
+- Kontrola prístupu k súborom lístkov
+- Ochrana pred priamym prístupom k PHP súborom
+
+20. LOGOVANIE A MONITORING
+-----------------------
+Typy logov:
+- Systémové logy (system-RRRR-MM-DD.log)
+- Predajné logy (predaj-RRRR-MM-DD.log)
+- Logy chýb (errors-RRRR-MM-DD.log)
+- Logy synchronizácie (sync-RRRR-MM-DD.log)
+
+Monitorované udalosti:
+- Úspešné/neúspešné predaje
+- Tlač lístkov
+- Synchronizácia databáz
+- Chyby pri operáciách
+- Prístupy k administrácii
+
+21. SYNCHRONIZÁCIA DÁT
+-------------------
+Automatická synchronizácia:
+- Interval kontroly nastaviteľný (hourly/twicedaily/daily)
+- Automatické riešenie konfliktov
+- Notifikácie pri rozdieloch
+- Možnosť manuálnej synchronizácie
+
+Zálohovanie:
+- Denné zálohy databáz
+- Uchovávanie záloh 30 dní
+- Export dát do JSON
+- Možnosť obnovy zo zálohy
+
+22. GENEROVANIE LÍSTKOV
+--------------------
+HTML šablóny:
+- Responzívny dizajn pre tlač
+- Optimalizácia pre 54mm/80mm šírku
+- Podpora UTF-8 znakov
+- Automatické zalamovanie textu
+
+Obsah lístka:
+- Logo spoločnosti
+- Konfigurovateľná hlavička
+- Zoznam položiek s počtami a cenami
+- Celková suma
+- Číslo lístka a čiarový kód
+- Dátum a čas predaja
+- Meno predajcu
+- Konfigurovateľná pätička

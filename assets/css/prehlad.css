@@ -1,0 +1,27 @@
+.cl-filter-panel {
+    background: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cl-date-filter {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.cl-stats {
+    font-weight: bold;
+    color: #135e96;
+}
+
+#listok-preview .cl-modal-content {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}

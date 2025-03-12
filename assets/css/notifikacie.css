@@ -1,0 +1,34 @@
+.cl-notifikacia {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 500;
+    z-index: 999999;
+    animation: notifikaciaSlide 0.3s ease-in-out;
+}
+
+.cl-notifikacia.success {
+    background: #00a32a;
+}
+
+.cl-notifikacia.error {
+    background: #d63638;
+}
+
+.cl-notifikacia.warning {
+    background: #dba617;
+}
+
+@keyframes notifikaciaSlide {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

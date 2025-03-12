@@ -1,0 +1,96 @@
+.cl-rozdiel-box {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 15px;
+    margin: 15px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.cl-porovnanie {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 15px 0;
+}
+
+.cl-primary, .cl-backup {
+    background: #f8f9fa;
+    padding: 10px;
+    border: 1px solid #eee;
+}
+
+.cl-primary h4 {
+    color: #135e96;
+}
+
+.cl-backup h4 {
+    color: #2271b1;
+}
+
+.cl-akcie {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.cl-akcie .button {
+    margin-right: 10px;
+}
+
+.cl-rozdiely-wrapper {
+    margin: 20px 0;
+}
+
+.cl-rozdiel-tabulka {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+}
+
+.cl-rozdiel-detail {
+    padding: 15px;
+}
+
+.cl-db-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.cl-rozdiel-akcie {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.cl-notice-db-rozdiel {
+    border-left-color: #dc3232;
+}
+
+.wp-list-table .column-akcie {
+    width: 200px;
+}
+
+.cl-button-group {
+    display: flex;
+    gap: 5px;
+}
+
+.cl-page-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.cl-filter-box {
+    background: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}

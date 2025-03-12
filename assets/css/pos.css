@@ -1,0 +1,75 @@
+.cl-terminal {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    padding: 20px;
+    background: #f0f0f1;
+    border-radius: 8px;
+    min-height: 600px;
+}
+
+.cl-listky-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.cl-listok-btn {
+    height: 80px;
+    border: none;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+.cl-listok-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.cl-listok-btn:active {
+    transform: translateY(0);
+}
+
+.cl-listok-nazov {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.cl-listok-cena {
+    color: #2271b1;
+}
+
+.cl-kosik {
+    background: #fff;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cl-kosik-polozky {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.cl-kosik-suma {
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: right;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+}
+
+#dokoncit-predaj {
+    width: 100%;
+    height: 50px;
+    margin-top: 10px;
+}

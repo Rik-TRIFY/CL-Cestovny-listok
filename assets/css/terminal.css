@@ -1,0 +1,66 @@
+.cl-terminal-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.cl-listky {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    flex: 3;
+}
+
+.cl-listok {
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 16px;
+    transition: transform 0.2s;
+}
+
+.cl-listok .nazov {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.cl-listok {
+    transition: all 0.2s ease;
+}
+
+.cl-listok.kliknute {
+    transform: scale(0.95);
+    background-color: #e0e0e0;
+}
+
+.cl-kosik {
+    flex: 1;
+    min-width: 300px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cl-kosik .polozka {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.cl-kosik .pocet {
+    font-weight: bold;
+    margin: 0 10px;
+}
+
+#dokoncit-predaj {
+    width: 100%;
+    height: 50px;
+    margin-top: 20px;
+    font-size: 20px;
+}

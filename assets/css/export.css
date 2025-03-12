@@ -1,0 +1,29 @@
+.cl-export-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.cl-export-box {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}
+
+.cl-export-form .form-field {
+    margin-bottom: 15px;
+}
+
+.cl-export-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.cl-export-form input[type="date"],
+.cl-export-form select {
+    width: 100%;
+    margin-bottom: 10px;
+}
