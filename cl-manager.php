@@ -198,23 +198,25 @@ class CestovneListky {
         );
         
         $menu[1] = array('', 'read', 'separator1', '', 'wp-menu-separator');
-
+    
+        // Prehľad (dashboard)
         add_submenu_page(
             'cl-manager',
             'Prehľad',
-            'Prehľad',
+            'Prehľad (dashboard)',
             'manage_options',
             'cl-manager',
             [$this, 'zobrazDashboard']
         );
     
+        // Správa položiek
         add_submenu_page(
             'cl-manager',
-            'Správa lístkov',
-            'Správa lístkov',
+            'Správa položiek',
+            'Správa položiek',
             'manage_options',
-            'cl-listky',
-            [$this, 'zobrazSpravuListkov']
+            'cl-polozky',
+            [$this, 'zobrazSpravuPoloziek']
         );
 
         // História predaja
@@ -227,6 +229,7 @@ class CestovneListky {
             [$this, 'zobrazHistoriu']
         );
 
+        // Štatistiky
         add_submenu_page(
             'cl-manager',
             'Štatistiky',
@@ -236,24 +239,17 @@ class CestovneListky {
             [$this, 'zobrazStatistiky']
         );
 
+        // Import/Export dát
         add_submenu_page(
             'cl-manager',
-            'Export dát',
-            'Export dát',
+            'Import/Export dát',
+            'Import/Export dát',
             'manage_options',
-            'cl-export',
-            [$this, 'zobrazExport']
+            'cl-import-export',
+            [$this, 'zobrazImportExport']
         );
 
-        add_submenu_page(
-            'cl-manager',
-            'Import dát',
-            'Import dát',
-            'manage_options',
-            'cl-import',
-            [$this, 'zobrazImport']
-        );
-
+        // Zálohy
         add_submenu_page(
             'cl-manager',
             'Zálohy',
@@ -263,6 +259,7 @@ class CestovneListky {
             [$this, 'zobrazZalohy']
         );
 
+        // Nastavenia
         add_submenu_page(
             'cl-manager',
             'Nastavenia',
@@ -272,6 +269,7 @@ class CestovneListky {
             [$this, 'zobrazNastavenia']
         );
 
+        // Systémové logy
         add_submenu_page(
             'cl-manager',
             'Systémové logy',
@@ -290,6 +288,7 @@ class CestovneListky {
         // CSS
         wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
         wp_enqueue_style('cl-listky', CL_ASSETS_URL . 'css/listky.css', [], CL_VERSION);
+        wp_enqueue_style('cl-import-export', CL_ASSETS_URL . 'css/import-export.css', [], CL_VERSION);
         
         // JavaScript
         wp_enqueue_script('cl-listky', CL_ASSETS_URL . 'js/listky.js', ['jquery'], CL_VERSION, true);
@@ -364,6 +363,39 @@ class CestovneListky {
         ob_start();
         (new POS\Terminal())->zobrazTerminal();
         return ob_get_clean();
+    }
+
+    public function zobrazSpravuPoloziek(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die('Nedostatočné oprávnenia');
+        }
+        
+        $akcia = $_GET['akcia'] ?? 'listky';
+        
+        switch ($akcia) {
+            case 'kategorie':
+                require CL_INCLUDES_DIR . 'admin/pohlady/sprava-kategorii.php';
+                break;
+            case 'ceny':
+                require CL_INCLUDES_DIR . 'admin/pohlady/sprava-cien.php';
+                break;
+            default:
+                require CL_INCLUDES_DIR . 'admin/pohlady/sprava-listkov.php';
+        }
+    }
+
+    public function zobrazImportExport(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die('Nedostatočné oprávnenia');
+        }
+        
+        $akcia = $_GET['akcia'] ?? 'import';
+        
+        if ($akcia === 'export') {
+            require CL_INCLUDES_DIR . 'admin/pohlady/export.php';
+        } else {
+            require CL_INCLUDES_DIR . 'admin/pohlady/import.php';
+        }
     }
 }
 
