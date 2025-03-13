@@ -78,6 +78,9 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    min-width: 430px;
+    background: #f5f5f5;
+    box-sizing: border-box;
 }
 
 .cl-terminal-header {
@@ -136,4 +139,307 @@
 .pos-button-size-large .cl-listok {
     padding: 20px;
     font-size: 18px;
+}
+
+/* Obrazovky */
+.cl-terminal-screen {
+    display: none;
+}
+
+.cl-terminal-screen.active {
+    display: block;
+}
+
+/* Grid pre tlačidlá */
+.cl-terminal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* Štýly tlačidiel */
+.cl-terminal-btn {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cl-terminal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.cl-terminal-btn:active {
+    transform: translateY(0);
+}
+
+/* Ticket button */
+.cl-ticket-btn {
+    background: #fff;
+}
+
+.cl-ticket-btn .nazov {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.cl-ticket-btn .cena {
+    font-size: 14px;
+    color: #2271b1;
+}
+
+/* Function buttons */
+.cl-function-btn {
+    background: #e0e0e0;
+}
+
+.cl-function-btn.empty {
+    background: #f5f5f5;
+    box-shadow: none;
+    cursor: default;
+}
+
+#cl-kosik-btn {
+    background: #2271b1;
+    color: #fff;
+    position: relative;
+}
+
+#cl-kosik-btn .count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #d63638;
+    color: #fff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+/* Košík screen */
+.cl-kosik-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.cl-back-btn {
+    margin-right: 15px;
+}
+
+.cl-kosik-items {
+    min-height: 200px;
+    margin-bottom: 20px;
+}
+
+.cl-kosik-footer {
+    border-top: 1px solid #ddd;
+    padding-top: 15px;
+}
+
+.cl-kosik-sum {
+    font-size: 18px;
+    font-weight: 500;
+    text-align: right;
+    margin-bottom: 15px;
+}
+
+#cl-dokoncit {
+    width: 100%;
+    aspect-ratio: auto;
+    background: #2271b1;
+    color: #fff;
+    font-size: 16px;
+    padding: 15px;
+}
+
+/* Responzivita */
+@media (max-width: 430px) {
+    .cl-terminal-container {
+        min-width: 100%;
+        padding: 10px;
+    }
+
+    .cl-terminal-grid {
+        gap: 5px;
+    }
+
+    .cl-ticket-btn .nazov {
+        font-size: 14px;
+    }
+
+    .cl-ticket-btn .cena {
+        font-size: 12px;
+    }
+}
+
+.cl-pos-container {
+    min-width: 350px;
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    background: #f0f0f0;
+    box-sizing: border-box;
+}
+
+.cl-screen {
+    display: none;
+}
+
+.cl-screen.active {
+    display: block;
+}
+
+/* Grid pre tlačidlá */
+.cl-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+}
+
+/* Základné tlačidlo */
+.cl-button {
+    aspect-ratio: 1;
+    width: 100%;
+    border: 1px solid #ddd;
+    background: #fff;
+    font-size: clamp(18px, 4vw, 24px);  /* Responzívna veľkosť fontu */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(5px, 2vw, 10px);  /* Responzívny padding */
+}
+
+.cl-button.empty {
+    background: #f0f0f0;
+    border: none;
+    cursor: default;
+}
+
+/* Košík */
+#cl-kosik {
+    background: #2271b1;
+    color: #fff;
+    border: none;
+}
+
+/* Obrazovka košíka */
+.cl-kosik-hlavicka {
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.cl-back {
+    padding: 5px 15px;
+    background: none;
+    border: 1px solid #ddd;
+    cursor: pointer;
+}
+
+.cl-kosik-suma {
+    margin: 20px 0;
+    font-size: 18px;
+    text-align: right;
+}
+
+#cl-dokoncit {
+    width: 100%;
+    padding: 15px;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Responzívnosť */
+@media (max-width: 430px) {
+    .cl-pos-container {
+        min-width: 100%;
+        padding: 5px;
+    }
+}
+
+@media (max-width: 350px) {
+    .cl-pos-container {
+        min-width: 350px;
+        padding: 5px;
+    }
+}
+
+@media (min-width: 351px) {
+    .cl-pos-container {
+        width: 100%;
+    }
+    
+    .cl-button {
+        min-height: clamp(80px, 20vw, 120px);  /* Responzívna minimálna výška */
+    }
+}
+
+/* Grid pre tlačidlá - dynamické stĺpce */
+.cl-buttons-grid {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Nastavenie počtu stĺpcov */
+.cl-buttons-grid.columns-2 { grid-template-columns: repeat(2, 1fr); }
+.cl-buttons-grid.columns-3 { grid-template-columns: repeat(3, 1fr); }
+.cl-buttons-grid.columns-4 { grid-template-columns: repeat(4, 1fr); }
+.cl-buttons-grid.columns-5 { grid-template-columns: repeat(5, 1fr); }
+.cl-buttons-grid.columns-6 { grid-template-columns: repeat(6, 1fr); }
+
+/* Veľkosti tlačidiel */
+.cl-buttons-grid.size-small .cl-button {
+    font-size: 14px;
+    min-height: 60px;
+    padding: 5px;
+}
+
+.cl-buttons-grid.size-medium .cl-button {
+    font-size: 18px;
+    min-height: 80px;
+    padding: 10px;
+}
+
+.cl-buttons-grid.size-large .cl-button {
+    font-size: 24px;
+    min-height: 100px;
+    padding: 15px;
+}
+
+/* Rozloženie */
+.cl-buttons-grid.layout-list {
+    grid-template-columns: 1fr !important;
+}
+
+.cl-buttons-grid.layout-list .cl-button {
+    aspect-ratio: auto;
+    height: 60px;
+}
+
+.cl-buttons-grid.layout-compact .cl-button {
+    font-size: 90%;
+    min-height: auto;
 }

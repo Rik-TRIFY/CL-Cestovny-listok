@@ -2,6 +2,10 @@
 declare(strict_types=1);
 
 if (!defined('ABSPATH')) exit;
+
+// Inicializujeme správcu nastavení
+$spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
+
 ?>
 
 <div class="wrap">
@@ -50,7 +54,7 @@ if (!defined('ABSPATH')) exit;
                                 <h3>HTML šablóna lístka</h3>
                                 <?php
                                 wp_editor(
-                                    get_option('cl_nastavenia')['sablona_listka'] ?? $this->getDefaultTemplate(),
+                                    $spravca->nacitaj('listok_sablona'),
                                     'sablona-listka',
                                     [
                                         'media_buttons' => true,
@@ -144,18 +148,41 @@ if (!defined('ABSPATH')) exit;
                 case 'pos':
                     ?>
                     <div class="cl-grid-container">
-                        <!-- POS Nastavenia -->
                         <div class="cl-grid-left">
                             <div class="cl-editor-box">
                                 <h3>Nastavenia POS terminálu</h3>
-                                <?php do_settings_sections('cl_sekcia_pos'); ?>
+                                <table class="form-table">
+                                    <tr>
+                                        <th>Rozloženie:</th>
+                                        <td>
+                                            <select name="cl_nastavenia[pos_layout]">
+                                                <option value="grid" <?php selected($spravca->nacitaj('pos_layout'), 'grid'); ?>>Mriežka</option>
+                                                <option value="list" <?php selected($spravca->nacitaj('pos_layout'), 'list'); ?>>Zoznam</option>
+                                                <option value="compact" <?php selected($spravca->nacitaj('pos_layout'), 'compact'); ?>>Kompaktný</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Počet stĺpcov:</th>
+                                        <td>
+                                            <input type="number" name="cl_nastavenia[pos_columns]" value="<?php echo esc_attr($spravca->nacitaj('pos_columns', '4')); ?>" min="2" max="6">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Veľkosť tlačidiel:</th>
+                                        <td>
+                                            <select name="cl_nastavenia[pos_button_size]">
+                                                <option value="small" <?php selected($spravca->nacitaj('pos_button_size'), 'small'); ?>>Malé</option>
+                                                <option value="medium" <?php selected($spravca->nacitaj('pos_button_size'), 'medium'); ?>>Stredné</option> 
+                                                <option value="large" <?php selected($spravca->nacitaj('pos_button_size'), 'large'); ?>>Veľké</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
-                            <div class="cl-editor-box">
-                                <h3>Štýlovanie tlačidiel</h3>
-                                <?php do_settings_sections('cl_sekcia_pos_style'); ?>
-                            </div>
+                            <?php do_settings_sections('cl_sekcia_pos'); ?>
                         </div>
-                        
+
                         <!-- Náhľad -->
                         <div class="cl-grid-right">
                             <div class="cl-preview-box">
@@ -170,18 +197,11 @@ if (!defined('ABSPATH')) exit;
                                         <option value="samsung-s8">Samsung S8+ (360x740)</option>
                                     </select>
                                     <div id="cl-custom-resolution">
-                                        <input type="number" id="cl-width" placeholder="Šírka" value="375" min="280" max="1920">
+                                        <input type="number" id="cl-width" placeholder="Šírka" value="<?php echo esc_attr($spravca->nacitaj('pos_width', '375')); ?>" min="280" max="1920">
                                         <span>×</span>
-                                        <input type="number" id="cl-height" placeholder="Výška" value="667" min="400" max="1920">
-                                        
-                                        <?php
-                                        // Pridáme hidden inputy s aktuálnymi hodnotami z DB
-                                        $nastavenia = get_option('cl_nastavenia');
-                                        $saved_width = $nastavenia['pos_width'] ?? '375';
-                                        $saved_height = $nastavenia['pos_height'] ?? '667';
-                                        ?>
-                                        <input type="hidden" name="cl_nastavenia[pos_width]" id="pos_width" value="<?php echo esc_attr($saved_width); ?>">
-                                        <input type="hidden" name="cl_nastavenia[pos_height]" id="pos_height" value="<?php echo esc_attr($saved_height); ?>">
+                                        <input type="number" id="cl-height" placeholder="Výška" value="<?php echo esc_attr($spravca->nacitaj('pos_height', '667')); ?>" min="400" max="1920">
+                                        <input type="hidden" name="cl_nastavenia[pos_width]" id="pos_width" value="<?php echo esc_attr($spravca->nacitaj('pos_width', '375')); ?>">
+                                        <input type="hidden" name="cl_nastavenia[pos_height]" id="pos_height" value="<?php echo esc_attr($spravca->nacitaj('pos_height', '667')); ?>">
                                     </div>
                                 </div>
                                 <div id="cl-device-frame">

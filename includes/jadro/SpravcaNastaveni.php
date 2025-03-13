@@ -75,4 +75,33 @@ class SpravcaNastaveni {
             $name
         ));
     }
+
+    public function nacitajVsetkyPrefixom(string $prefix): array {
+        $query = $this->wpdb->prepare(
+            "SELECT option_name, option_value FROM {$this->wpdb->prefix}cl_nastavenia WHERE option_name LIKE %s",
+            $prefix . '_%'
+        );
+        
+        $vysledky = $this->wpdb->get_results($query, ARRAY_A);
+        $nastavenia = [];
+        
+        foreach ($vysledky as $vysledok) {
+            $key = str_replace($prefix . '_', '', $vysledok['option_name']);
+            $value = $vysledok['option_value'];
+            
+            // Skúsime dekódovať JSON
+            $decoded = json_decode($value, true);
+            $nastavenia[$key] = (json_last_error() === JSON_ERROR_NONE) ? $decoded : $value;
+        }
+        
+        return $nastavenia;
+    }
+
+    // Pridáme metódu pre zmazanie všetkých nastavení s prefixom
+    public function zmazVsetkyPrefixom(string $prefix): bool {
+        return (bool)$this->wpdb->query($this->wpdb->prepare(
+            "DELETE FROM {$this->wpdb->prefix}cl_nastavenia WHERE option_name LIKE %s",
+            $prefix . '_%'
+        ));
+    }
 }

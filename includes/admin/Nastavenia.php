@@ -14,7 +14,10 @@ namespace CL\Admin;
  */
 
 class Nastavenia {
+    private \CL\jadro\SpravcaNastaveni $spravca;
+
     public function __construct() {
+        $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         add_action('admin_init', [$this, 'registrujNastavenia']);
         add_action('admin_enqueue_scripts', [$this, 'pridajMedia']);
         add_filter('mce_buttons', [$this, 'registrujTlacitka']);
@@ -62,6 +65,8 @@ class Nastavenia {
         if (!current_user_can('manage_options')) {
             wp_die('Nedostatočné oprávnenia');
         }
+
+        $spravca = $this->spravca; // Sprístupníme $spravca pre template
         include CL_INCLUDES_DIR . 'admin/pohlady/nastavenia-formular.php';
     }
 
@@ -175,25 +180,34 @@ class Nastavenia {
         }
     }
 
+    /**
+     * Upravíme sanitizeNastavenia aby ukladal nastavenia s prefixom podľa záložky
+     */
     public function sanitizeNastavenia($input) {
         if (empty($input) || !is_array($input)) {
             return false;
         }
 
-        $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         $active_tab = $_GET['tab'] ?? 'listok';
         
         try {
+            // Špeciálna logika pre uloženie šablóny lístka
+            if (isset($input['sablona_listka'])) {
+                $this->spravca->uloz('listok_sablona', $input['sablona_listka']);
+                unset($input['sablona_listka']);
+            }
+
+            // Uložíme každé nastavenie samostatne, už bez prefixu
             foreach ($input as $key => $value) {
-                // Sanitize hodnôt podľa typu
-                if (in_array($key, ['pos_width', 'pos_height', 'pos_columns'])) {
-                    $value = absint($value);
-                } elseif (is_string($value)) {
-                    $value = sanitize_text_field($value);
+                // Špeciálna validácia pre POS nastavenia
+                if (strpos($key, 'pos_') === 0) {
+                    if (in_array($key, ['pos_width', 'pos_height', 'pos_columns'])) {
+                        $value = absint($value);
+                    }
                 }
                 
-                // Uložíme hodnotu
-                $spravca->uloz($key, $value);
+                // Uložíme hodnotu bez prefixu záložky
+                $this->spravca->uloz($key, $value);
             }
             
             return true;
@@ -239,7 +253,7 @@ class Nastavenia {
     // Callback metódy pre polia
     public function zobrazInputLogo(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $logo_url = $spravca->nacitaj('logo_url', '');
+        $logo_url = $spravca->nacitaj('listok_logo_url', '');
         ?>
         <input type="text" id="cl_logo_url" name="cl_nastavenia[logo_url]" value="<?php echo esc_attr($logo_url); ?>" class="regular-text">
         <button type="button" class="button" id="cl_upload_logo">Vybrať obrázok</button>
@@ -253,7 +267,7 @@ class Nastavenia {
 
     public function zobrazInputHlavicka(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $hlavicka = $spravca->nacitaj('hlavicka', '');
+        $hlavicka = $spravca->nacitaj('listok_hlavicka', '');
         ?>
         <textarea name="cl_nastavenia[hlavicka]" rows="3" class="large-text"><?php echo esc_textarea($hlavicka); ?></textarea>
         <p class="description">
@@ -266,7 +280,7 @@ class Nastavenia {
 
     public function zobrazInputPaticka(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $paticka = $spravca->nacitaj('paticka', '');
+        $paticka = $spravca->nacitaj('listok_paticka', '');
         ?>
         <textarea name="cl_nastavenia[paticka]" rows="3" class="large-text"><?php echo esc_textarea($paticka); ?></textarea>
         <p class="description">
@@ -279,7 +293,7 @@ class Nastavenia {
 
     public function zobrazInputFormatCisla(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $format = $spravca->nacitaj('format_cisla', 'RRRRMMDD-XXXX');
+        $format = $spravca->nacitaj('predaj_format_cisla', 'RRRRMMDD-XXXX');
         ?>
         <input type="text" name="cl_nastavenia[format_cisla]" value="<?php echo esc_attr($format); ?>" class="regular-text">
         <p class="description">
@@ -291,7 +305,7 @@ class Nastavenia {
 
     public function zobrazInputAutoTlac(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $auto_tlac = $spravca->nacitaj('auto_tlac', '1');
+        $auto_tlac = $spravca->nacitaj('predaj_auto_tlac', '1');
         ?>
         <label>
             <input type="checkbox" name="cl_nastavenia[auto_tlac]" value="1" <?php checked('1', $auto_tlac); ?>>
@@ -357,7 +371,7 @@ class Nastavenia {
 
     public function zobrazInputSirkaTlace(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $sirka = $spravca->nacitaj('sirka_tlace', '54');
+        $sirka = $spravca->nacitaj('predaj_sirka_tlace', '54');
         ?>
         <select name="cl_nastavenia[sirka_tlace]">
             <option value="54" <?php selected($sirka, '54'); ?>>54mm (štandardná)</option>
@@ -371,7 +385,7 @@ class Nastavenia {
 
     public function zobrazInputDebugMode(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $debug = $spravca->nacitaj('debug_mode', '0');
+        $debug = $spravca->nacitaj('system_debug_mode', '0');
         ?>
         <label>
             <input type="checkbox" name="cl_nastavenia[debug_mode]" value="1" <?php checked($debug, '1'); ?>>
@@ -386,7 +400,7 @@ class Nastavenia {
 
     public function zobrazInputCacheLifetime(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $lifetime = $spravca->nacitaj('cache_lifetime', '3600');
+        $lifetime = $spravca->nacitaj('system_cache_lifetime', '3600');
         ?>
         <input type="number" name="cl_nastavenia[cache_lifetime]" value="<?php echo esc_attr($lifetime); ?>" min="300" step="300">
         <p class="description">
@@ -398,7 +412,7 @@ class Nastavenia {
 
     public function zobrazInputDbHost(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $hodnota = $spravca->nacitaj('db_backup_host', DB_HOST);
+        $hodnota = $spravca->nacitaj('databazy_db_backup_host', DB_HOST);
         ?>
         <input type="text" name="cl_nastavenia[db_backup_host]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
         <p class="description">Adresa servera záložnej databázy (napr. localhost alebo IP adresa)</p>
@@ -407,7 +421,7 @@ class Nastavenia {
 
     public function zobrazInputDbName(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $hodnota = $spravca->nacitaj('db_backup_name', DB_NAME . '_backup');
+        $hodnota = $spravca->nacitaj('databazy_db_backup_name', DB_NAME . '_backup');
         ?>
         <input type="text" name="cl_nastavenia[db_backup_name]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
         <p class="description">Názov záložnej databázy</p>
@@ -416,7 +430,7 @@ class Nastavenia {
 
     public function zobrazInputDbUser(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $hodnota = $spravca->nacitaj('db_backup_user', DB_USER);
+        $hodnota = $spravca->nacitaj('databazy_db_backup_user', DB_USER);
         ?>
         <input type="text" name="cl_nastavenia[db_backup_user]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
         <p class="description">Používateľské meno pre prístup k záložnej databáze</p>
@@ -425,7 +439,7 @@ class Nastavenia {
 
     public function zobrazInputDbPass(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $hodnota = $spravca->nacitaj('db_backup_pass', '');
+        $hodnota = $spravca->nacitaj('databazy_db_backup_pass', '');
         ?>
         <input type="password" name="cl_nastavenia[db_backup_pass]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
         <p class="description">Heslo pre prístup k záložnej databáze</p>
@@ -434,7 +448,7 @@ class Nastavenia {
 
     public function zobrazInputDbSyncInterval(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $interval = $spravca->nacitaj('db_sync_interval', '300');
+        $interval = $spravca->nacitaj('databazy_db_sync_interval', '300');
         ?>
         <select name="cl_nastavenia[db_sync_interval]">
             <option value="60" <?php selected($interval, '60'); ?>>Každú minútu</option>
@@ -450,7 +464,7 @@ class Nastavenia {
     // Nové callback metódy pre rozšírené nastavenia
     public function zobrazInputFontVelkost(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $velkost = $spravca->nacitaj('font_velkost', '12');
+        $velkost = $spravca->nacitaj('listok_font_velkost', '12');
         ?>
         <select name="cl_nastavenia[font_velkost]">
             <option value="10" <?php selected($velkost, '10'); ?>>10px - Malé</option>
@@ -463,7 +477,7 @@ class Nastavenia {
 
     public function zobrazInputLogoVelkost(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $velkost = $spravca->nacitaj('logo_velkost', '50');
+        $velkost = $spravca->nacitaj('listok_logo_velkost', '50');
         ?>
         <input type="number" name="cl_nastavenia[logo_velkost]" value="<?php echo esc_attr($velkost); ?>" class="small-text">
         <p class="description">Maximálna šírka loga v mm. Odporúčaná hodnota: 50mm pre 54mm tlačiareň.</p>
@@ -472,7 +486,7 @@ class Nastavenia {
 
     public function zobrazInputPismo(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $pismo = $spravca->nacitaj('pismo', 'Arial');
+        $pismo = $spravca->nacitaj('listok_pismo', 'Arial');
         ?>
         <select name="cl_nastavenia[pismo]">
             <option value="Arial" <?php selected($pismo, 'Arial'); ?>>Arial</option>
@@ -485,7 +499,7 @@ class Nastavenia {
 
     public function zobrazInputZarovnanie(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $zarovnanie = $spravca->nacitaj('zarovnanie', 'left');
+        $zarovnanie = $spravca->nacitaj('listok_zarovnanie', 'left');
         ?>
         <select name="cl_nastavenia[zarovnanie]">
             <option value="left" <?php selected($zarovnanie, 'left'); ?>>Vľavo</option>
@@ -498,7 +512,7 @@ class Nastavenia {
 
     public function zobrazInputZalamovanie(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $zalamovanie = $spravca->nacitaj('zalamovanie', '1');
+        $zalamovanie = $spravca->nacitaj('listok_zalamovanie', '1');
         ?>
         <label>
             <input type="checkbox" name="cl_nastavenia[zalamovanie]" value="1" <?php checked($zalamovanie, '1'); ?>>
@@ -510,7 +524,7 @@ class Nastavenia {
 
     public function zobrazInputPredvolenaTlaciaren(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $tlaciaren = $spravca->nacitaj('predvolena_tlaciaren', '');
+        $tlaciaren = $spravca->nacitaj('predaj_predvolena_tlaciaren', '');
         ?>
         <input type="text" name="cl_nastavenia[predvolena_tlaciaren]" value="<?php echo esc_attr($tlaciaren); ?>" class="regular-text">
         <p class="description">Názov predvolenej tlačiarne pre tlač lístkov.</p>
@@ -519,7 +533,7 @@ class Nastavenia {
 
     public function zobrazInputPocetKopii(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $kopie = $spravca->nacitaj('pocet_kopii', '1');
+        $kopie = $spravca->nacitaj('predaj_pocet_kopii', '1');
         ?>
         <input type="number" name="cl_nastavenia[pocet_kopii]" value="<?php echo esc_attr($kopie); ?>" class="small-text">
         <p class="description">Počet kópií lístka, ktoré sa majú vytlačiť.</p>
@@ -528,7 +542,7 @@ class Nastavenia {
 
     public function zobrazInputCasStornovania(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $cas = $spravca->nacitaj('cas_stornovania', '300');
+        $cas = $spravca->nacitaj('predaj_cas_stornovania', '300');
         ?>
         <input type="number" name="cl_nastavenia[cas_stornovania]" value="<?php echo esc_attr($cas); ?>" class="small-text">
         <p class="description">Časový limit na stornovanie lístka v sekundách. Predvolená hodnota: 300 sekúnd (5 minút).</p>
@@ -537,7 +551,7 @@ class Nastavenia {
 
     public function zobrazInputDbAutoSync(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $auto_sync = $spravca->nacitaj('db_auto_sync', '1');
+        $auto_sync = $spravca->nacitaj('databazy_db_auto_sync', '1');
         ?>
         <label>
             <input type="checkbox" name="cl_nastavenia[db_auto_sync]" value="1" <?php checked($auto_sync, '1'); ?>>
@@ -549,9 +563,9 @@ class Nastavenia {
 
     public function zobrazInputPosLayout(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $layout = $spravca->nacitaj('pos_layout', 'grid');
+        $layout = $spravca->nacitaj('pos_pos_layout', 'grid');
         ?>
-        <select name="cl_nastavenia[pos_layout]" id="pos_layout">
+        <select name="cl_nastavenia[layout]" id="pos_layout">
             <option value="grid" <?php selected($layout, 'grid'); ?>>Mriežka</option>
             <option value="list" <?php selected($layout, 'list'); ?>>Zoznam</option>
             <option value="compact" <?php selected($layout, 'compact'); ?>>Kompaktný</option>
@@ -562,7 +576,7 @@ class Nastavenia {
 
     public function zobrazInputPosColumns(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $columns = $spravca->nacitaj('pos_columns', 4);
+        $columns = $spravca->nacitaj('pos_pos_columns', 4);
         ?>
         <input type="number" name="cl_nastavenia[pos_columns]" value="<?php echo esc_attr($columns); ?>" min="2" max="6" step="1">
         <p class="description">Počet stĺpcov v mriežke (2-6)</p>
@@ -571,7 +585,7 @@ class Nastavenia {
 
     public function zobrazInputPosButtonSize(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $size = $spravca->nacitaj('pos_button_size', 'medium');
+        $size = $spravca->nacitaj('pos_pos_button_size', 'medium');
         ?>
         <select name="cl_nastavenia[pos_button_size]">
             <option value="small" <?php selected($size, 'small'); ?>>Malé</option>
@@ -584,7 +598,7 @@ class Nastavenia {
 
     public function zobrazInputPosWidth(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $width = $spravca->nacitaj('pos_width', '375');
+        $width = $spravca->nacitaj('pos_pos_width', '375');
         ?>
         <input type="hidden" name="cl_nastavenia[pos_width]" id="pos_width" value="<?php echo esc_attr($width); ?>">
         <?php
@@ -592,7 +606,7 @@ class Nastavenia {
 
     public function zobrazInputPosHeight(): void {
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        $height = $spravca->nacitaj('pos_height', '667');
+        $height = $spravca->nacitaj('pos_pos_height', '667');
         ?>
         <input type="hidden" name="cl_nastavenia[pos_height]" id="pos_height" value="<?php echo esc_attr($height); ?>">
         <?php
@@ -609,13 +623,6 @@ class Nastavenia {
     }
 
     private function getDefaultTemplate(): string {
-        // Načítame existujúcu šablónu ak existuje
-        $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        if (!empty($spravca->nacitaj('sablona_listka'))) {
-            return $spravca->nacitaj('sablona_listka');
-        }
-
-        // Inak vrátime predvolenú šablónu
         return <<<HTML
 <div class="listok">
     <!-- Hlavička lístka -->
