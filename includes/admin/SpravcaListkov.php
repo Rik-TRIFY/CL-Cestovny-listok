@@ -32,9 +32,10 @@ class SpravcaListkov {
         
         global $wpdb;
         $nazov = sanitize_text_field($_POST['nazov']);
+        $text_listok = sanitize_text_field($_POST['text_listok']);
         $cena = (float)$_POST['cena'];
         
-        if (empty($nazov) || $cena <= 0) {
+        if (empty($nazov) || empty($text_listok) || $cena <= 0) {
             wp_send_json_error('Neplatné údaje');
             return;
         }
@@ -43,10 +44,11 @@ class SpravcaListkov {
             $wpdb->prefix . 'cl_typy_listkov',
             [
                 'nazov' => $nazov,
+                'text_listok' => $text_listok,
                 'cena' => $cena,
                 'aktivny' => true
             ],
-            ['%s', '%f', '%d']
+            ['%s', '%s', '%f', '%d']
         );
         
         if ($success) {
@@ -105,6 +107,31 @@ class SpravcaListkov {
             wp_send_json_success();
         } else {
             wp_send_json_error('Chyba pri ukladaní');
+        }
+    }
+
+    public function nacitajListok(): void {
+        check_ajax_referer('cl_listky_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nedostatočné oprávnenia');
+            return;
+        }
+        
+        global $wpdb;
+        $id = (int)$_POST['id'];
+        
+        $listok = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}cl_typy_listkov` WHERE id = %d",
+                $id
+            )
+        );
+        
+        if ($listok) {
+            wp_send_json_success($listok);
+        } else {
+            wp_send_json_error('Lístok nebol nájdený');
         }
     }
 }

@@ -33,6 +33,13 @@ Terminal.php
 - Generovanie unikátneho čísla lístka
 - Ukladanie do DB a generovanie HTML
 - Logovanie operácií
+- Zobrazenie posledných 3 predajov s možnosťou opätovnej tlače
+
+Použitie:
+- Shortcode [pos_terminal] pre vloženie POS terminálu na stránku/podstránku
+- Automatická kontrola prihlásenia používateľa
+- Načítanie potrebných assets (CSS/JS)
+- Zobrazenie histórie posledných predajov
 
 /pohlady/
 - terminal.php (zobrazenie tlačidiel pre lístky)
@@ -168,6 +175,26 @@ Redundantné uloženie:
 - Kontrola integrity dát
 - Logovanie zmien
 
+ŠTRUKTÚRA TABULIEK:
+------------------
+cl_typy_listkov:
+- id (mediumint, AUTO_INCREMENT)
+- nazov (varchar 100) - interný názov pre správu a štatistiky
+- text_listok (varchar 200) - text ktorý sa zobrazí na vytlačenom lístku
+- cena (decimal 10,2)
+- aktivny (boolean) - predvolene TRUE
+- vytvorene (datetime) - auto CURRENT_TIMESTAMP
+- aktualizovane (datetime) - auto CURRENT_TIMESTAMP ON UPDATE
+
+cl_predaj:
+- id (mediumint, AUTO_INCREMENT)
+- typ_listka_id (mediumint) - FK na cl_typy_listkov
+- pocet (int)
+- celkova_cena (decimal 10,2)
+- predajca_id (bigint) - FK na wp_users
+- datum_predaja (datetime) - auto CURRENT_TIMESTAMP
+- storno (boolean) - predvolene FALSE
+
 14. TYPY SÚBOROV
 --------------
 Generované súbory:
@@ -283,3 +310,85 @@ Obsah lístka:
 - Dátum a čas predaja
 - Meno predajcu
 - Konfigurovateľná pätička
+
+ADRESÁROVÁ ŠTRUKTÚRA:
+--------------------
+/includes/
+  /admin/ - administrátorské rozhranie
+    /pohlady/ - PHP šablóny pre admin
+  /jadro/ - základné triedy
+  /pos/ - POS terminál funkcionalita
+  /predaj/ - súbory predaja
+  /logy/ - systémové logy
+  
+/assets/
+  /css/ - štýly
+  /js/ - JavaScript súbory
+  /images/ - obrázky
+
+/zalohy/ - priečinok pre zálohy systému
+
+HLAVNÉ FUNKCIE:
+-------------
+1. Správa lístkov
+   - Pridávanie/úprava/mazanie typov lístkov
+   - Nastavenie ceny a textu
+   - Aktivácia/deaktivácia
+
+2. POS Terminál
+   - Predaj lístkov
+   - Správa košíka
+   - Tlač lístkov
+
+3. Štatistiky
+   - Denné/týždenné/mesačné prehľady
+   - Export do CSV/XLSX/PDF
+   - Generovanie štatistík
+
+4. História predaja
+   - Prehľad všetkých predajov
+   - Filtrovanie podľa dátumu
+   - Stornovanie predaja
+   - Detail predaja
+
+5. Import/Export
+   - Import dát z CSV/XLSX
+   - Export predajov do CSV/XLSX/PDF
+   - Filtrovanie exportu podľa dátumu
+
+6. Zálohovanie
+   - Automatické zálohy
+   - Manuálne zálohy
+   - Obnova zo zálohy
+
+7. Systémové logy
+   - Sledovanie aktivít
+   - Logovanie chýb
+   - História operácií
+
+AJAX ENDPOINTY:
+-------------
+cl_pridaj_listok
+cl_uprav_listok
+cl_prepni_aktivny
+cl_zmaz_listok
+cl_nacitaj_listok
+cl_generuj_statistiky
+cl_vytvor_zalohu
+cl_obnov_zalohu
+cl_zmaz_zalohu
+cl_storno_predaja
+cl_detail_predaja
+
+PRÍSTUPOVÉ PRÁVA:
+---------------
+manage_options - prístup do admin rozhrania
+
+23. SHORTCODES
+------------
+[pos_terminal]
+- Vloženie POS terminálu na ľubovoľnú stránku
+- Automatická kontrola oprávnení
+- Responzívny dizajn
+- História posledných predajov s možnosťou opätovnej tlače
+- Ochrana pred viacnásobným odoslaním formulára

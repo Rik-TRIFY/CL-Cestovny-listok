@@ -119,6 +119,19 @@ class CestovneListky {
         // Vytvorenie databázových tabuliek
         $this->vytvorTabulky();
 
+        // Pridanie stĺpca text_listok ak neexistuje
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cl_typy_listkov';
+        $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+                                  WHERE TABLE_SCHEMA = '" . DB_NAME . "' 
+                                  AND TABLE_NAME = '{$table_name}'
+                                  AND COLUMN_NAME = 'text_listok'");
+                                  
+        if (empty($row)) {
+            $wpdb->query("ALTER TABLE `{$table_name}` 
+                         ADD COLUMN `text_listok` varchar(200) NOT NULL AFTER `nazov`");
+        }
+
         // Základné nastavenia - zmenené na public metódu
         $spravca = new jadro\SpravcaVerzie();
         $spravca->inicializuj();
@@ -156,6 +169,7 @@ class CestovneListky {
             "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_typy_listkov` (
                 id mediumint(9) NOT NULL AUTO_INCREMENT,
                 nazov varchar(100) NOT NULL,
+                text_listok varchar(200) NOT NULL,
                 cena decimal(10,2) NOT NULL,
                 aktivny boolean DEFAULT TRUE,
                 vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
@@ -281,24 +295,24 @@ class CestovneListky {
     }
 
     public function pridajAssets(): void {
-        if (!isset($_GET['page']) || !in_array($_GET['page'], ['cl-listky'])) {
-            return;
+        $stranka = $_GET['page'] ?? '';
+        
+        if ($stranka === 'cl-polozky') {
+            wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
+            wp_enqueue_style('cl-listky', CL_ASSETS_URL . 'css/listky.css', [], CL_VERSION);
+            wp_enqueue_script('cl-listky', CL_ASSETS_URL . 'js/listky.js', ['jquery'], CL_VERSION, true);
+            
+            wp_localize_script('cl-listky', 'cl_admin', [
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('cl_listky_nonce')
+            ]);
         }
-
-        // CSS
-        wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
-        wp_enqueue_style('cl-listky', CL_ASSETS_URL . 'css/listky.css', [], CL_VERSION);
-        wp_enqueue_style('cl-import-export', CL_ASSETS_URL . 'css/import-export.css', [], CL_VERSION);
-        wp_enqueue_style('cl-statistiky', CL_ASSETS_URL . 'css/statistiky.css', [], CL_VERSION);
         
-        // JavaScript
-        wp_enqueue_script('cl-listky', CL_ASSETS_URL . 'js/listky.js', ['jquery'], CL_VERSION, true);
-        
-        // Lokalizácia premenných pre JavaScript
-        wp_localize_script('cl-listky', 'cl_admin', [
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('cl_listky_nonce')
-        ]);
+        if ($stranka === 'cl-nastavenia') {
+            wp_enqueue_style('cl-nastavenia', CL_ASSETS_URL . 'css/nastavenia.css', [], CL_VERSION);
+            wp_enqueue_media(); // Pre výber loga
+            wp_enqueue_script('cl-nastavenia', CL_ASSETS_URL . 'js/nastavenia.js', ['jquery'], CL_VERSION, true);
+        }
     }
 
     public function zobrazDashboard(): void {

@@ -3,43 +3,73 @@ declare(strict_types=1);
 
 if (!defined('ABSPATH')) exit;
 ?>
+
 <div class="wrap">
     <h1>Nastavenia cestovných lístkov</h1>
     
     <form method="post" action="options.php">
-        <?php settings_fields('cl_nastavenia'); ?>
+        <?php
+        settings_fields('cl_nastavenia');
         
-        <table class="form-table">
-            <tr>
-                <th scope="row">Logo</th>
-                <td>
-                    <input type="hidden" id="cl-logo-url" name="cl_logo_url" 
-                           value="<?php echo esc_attr(get_option('cl_logo_url')); ?>">
-                    <img class="cl-nahladok-loga" src="<?php echo esc_url(get_option('cl_logo_url')); ?>" 
-                         style="max-width:200px;display:block;margin-bottom:10px;">
-                    <input type="button" class="button cl-nahraj-logo" value="Vybrať logo">
-                </td>
-            </tr>
-            <tr>
-                <th scope="row">Hlavička lístka</th>
-                <td>
-                    <textarea name="cl_hlavicka" rows="5" class="large-text"><?php 
-                        echo esc_textarea(get_option('cl_hlavicka')); 
-                    ?></textarea>
-                </td>
-            </tr>
-            <tr>
-                <th scope="row">Pätička lístka</th>
-                <td>
-                    <textarea name="cl_paticka" rows="5" class="large-text"><?php 
-                        echo esc_textarea(get_option('cl_paticka')); 
-                    ?></textarea>
-                </td>
-            </tr>
-        </table>
+        // Záložky nastavení
+        $active_tab = $_GET['tab'] ?? 'listok';
+        ?>
         
+        <nav class="nav-tab-wrapper">
+            <a href="?page=cl-nastavenia&tab=listok" 
+               class="nav-tab <?php echo $active_tab === 'listok' ? 'nav-tab-active' : ''; ?>">
+                Vzhľad lístka
+            </a>
+            <a href="?page=cl-nastavenia&tab=predaj" 
+               class="nav-tab <?php echo $active_tab === 'predaj' ? 'nav-tab-active' : ''; ?>">
+                Nastavenia predaja
+            </a>
+            <a href="?page=cl-nastavenia&tab=statistiky" 
+               class="nav-tab <?php echo $active_tab === 'statistiky' ? 'nav-tab-active' : ''; ?>">
+                Štatistiky
+            </a>
+            <a href="?page=cl-nastavenia&tab=zalohy" 
+               class="nav-tab <?php echo $active_tab === 'zalohy' ? 'nav-tab-active' : ''; ?>">
+                Zálohovanie
+            </a>
+            <a href="?page=cl-nastavenia&tab=notifikacie" 
+               class="nav-tab <?php echo $active_tab === 'notifikacie' ? 'nav-tab-active' : ''; ?>">
+                Notifikácie
+            </a>
+        </nav>
+
+        <div class="tab-content">
+            <?php
+            switch ($active_tab) {
+                case 'listok':
+                    do_settings_sections('cl_sekcia_listok');
+                    break;
+                case 'predaj':
+                    do_settings_sections('cl_sekcia_predaj');
+                    break;
+                case 'statistiky':
+                    do_settings_sections('cl_sekcia_statistiky');
+                    break;
+                case 'zalohy':
+                    do_settings_sections('cl_sekcia_zalohy');
+                    break;
+                case 'notifikacie':
+                    do_settings_sections('cl_sekcia_notifikacie');
+                    break;
+            }
+            ?>
+        </div>
+
         <?php submit_button(); ?>
     </form>
+
+    <!-- Náhľad lístka -->
+    <div class="cl-nastavenia-preview">
+        <h3>Náhľad lístka</h3>
+        <div id="cl-listok-preview">
+            <!-- JavaScript vloží náhľad lístka -->
+        </div>
+    </div>
 </div>
 
 <?php
