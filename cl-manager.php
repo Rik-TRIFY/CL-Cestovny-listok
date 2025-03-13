@@ -313,6 +313,57 @@ class CestovneListky {
         }
     }
 
+    private function vytvorTabulky(): void {
+        global $wpdb;
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        // Kontrola existencie tabuliek
+        $required_tables = [
+            'cl_typy_listkov',
+            'cl_predaj',
+            'cl_polozky_predaja',
+            'cl_nastavenia'
+        ];
+        
+        $missing_tables = [];
+        foreach ($required_tables as $table) {
+            $table_name = $wpdb->prefix . $table;
+            if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+                $missing_tables[] = $table;
+            }
+        }
+        
+        if (!empty($missing_tables)) {
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            
+            // Vytvoríme chýbajúce tabuľky
+            foreach ($missing_tables as $table) {
+                $sql = "";
+                switch ($table) {
+                    case 'cl_nastavenia':
+                        $sql = "CREATE TABLE `{$wpdb->prefix}cl_nastavenia` (
+                            id mediumint(9) NOT NULL AUTO_INCREMENT,
+                            option_name varchar(191) NOT NULL,
+                            option_value longtext NOT NULL,
+                            autoload varchar(20) NOT NULL DEFAULT 'yes',
+                            created datetime DEFAULT CURRENT_TIMESTAMP,
+                            updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            PRIMARY KEY  (id),
+                            UNIQUE KEY option_name (option_name)
+                        ) $charset_collate;";
+                        break;
+                    // ... existing cases for other tables ...
+                }
+                
+                if (!empty($sql)) {
+                    dbDelta($sql);
+                }
+            }
+            
+            error_log('CL Plugin: Vytvorené chýbajúce tabuľky: ' . implode(', ', $missing_tables));
+        }
+    }
+
     public function adminMenu(): void {
         global $menu;
         add_menu_page(
