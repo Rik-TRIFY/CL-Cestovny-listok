@@ -53,9 +53,17 @@ if (!defined('ABSPATH')) exit;
                                         'textarea_name' => 'cl_nastavenia[sablona_listka]',
                                         'textarea_rows' => 20,
                                         'teeny' => false,
+                                        'wpautop' => false,
                                         'tinymce' => [
+                                            'verify_html' => false,
+                                            'cleanup' => false,
+                                            'forced_root_block' => false,
+                                            'valid_styles' => '*[*]',
+                                            'extended_valid_elements' => '*[*]',
+                                            'remove_linebreaks' => false,
                                             'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_adv,cl_variables',
-                                            'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help'
+                                            'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
+                                            'content_css' => CL_ASSETS_URL . 'css/editor-style.css'
                                         ]
                                     ]
                                 );

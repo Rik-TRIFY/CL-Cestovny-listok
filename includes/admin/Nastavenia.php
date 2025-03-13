@@ -19,7 +19,7 @@ class Nastavenia {
         wp_enqueue_media();
         wp_enqueue_editor();
         
-        // Pridáme vlastný plugin pre TinyMCE
+        // Pridáme vlastný plugin pre TinyMCE a vlastné štýly
         wp_enqueue_script(
             'cl-tinymce-plugin',
             CL_ASSETS_URL . 'js/tinymce-plugin.js',
@@ -27,6 +27,25 @@ class Nastavenia {
             CL_VERSION,
             true
         );
+
+        // Pridáme vlastné nastavenia pre TinyMCE
+        add_filter('tiny_mce_before_init', function($settings) {
+            // Povolíme všetky CSS vlastnosti
+            $settings['valid_styles'] = '*[*]';
+            
+            // Zachováme formátovanie
+            $settings['verify_html'] = false;
+            $settings['cleanup'] = false;
+            $settings['forced_root_block'] = false;
+            
+            // Povolíme všetky HTML atribúty
+            $settings['extended_valid_elements'] = '*[*]';
+            
+            // Zabránime automatickému pridávaniu tagov
+            $settings['remove_linebreaks'] = false;
+            
+            return $settings;
+        });
     }
 
     public function zobrazStranku(): void {
@@ -116,6 +135,10 @@ class Nastavenia {
 
     // New sanitize callback
     public function sanitizeNastavenia($input) {
+        if (isset($input['sablona_listka'])) {
+            // Ponecháme HTML presne tak, ako je
+            return $input;
+        }
         $sanitized = [];
         
         // Zachováme kompletný HTML a CSS v šablóne lístka
