@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Správca nastavení systému
+ * 
+ * Singleton trieda pre:
+ * - Ukladanie nastavení do vlastnej DB tabuľky
+ * - Načítanie nastavení
+ * - Správu perzistentných dát
+ * - Automatickú konverziu JSON hodnôt
+ */
+
 namespace CL\jadro;
 
 class SpravcaNastaveni {

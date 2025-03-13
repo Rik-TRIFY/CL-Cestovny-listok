@@ -3,6 +3,16 @@ declare(strict_types=1);
 
 namespace CL\Admin;
 
+/**
+ * Správa nastavení pluginu
+ * 
+ * Zabezpečuje:
+ * - Registráciu nastavení vo WordPress admin
+ * - Ukladanie nastavení do vlastnej DB tabuľky
+ * - Zobrazenie formulárov pre nastavenia
+ * - Live náhľad nastavení
+ */
+
 class Nastavenia {
     public function __construct() {
         add_action('admin_init', [$this, 'registrujNastavenia']);
@@ -166,31 +176,29 @@ class Nastavenia {
     }
 
     public function sanitizeNastavenia($input) {
+        if (empty($input) || !is_array($input)) {
+            return false;
+        }
+
         $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         $active_tab = $_GET['tab'] ?? 'listok';
         
         try {
-            switch ($active_tab) {
-                case 'pos':
-                    if (!empty($input['pos_width']) && !empty($input['pos_height'])) {
-                        $spravca->uloz('pos_width', absint($input['pos_width']));
-                        $spravca->uloz('pos_height', absint($input['pos_height']));
-                    }
-                    
-                    $pos_fields = ['pos_layout', 'pos_columns', 'pos_button_size'];
-                    foreach ($pos_fields as $field) {
-                        if (isset($input[$field])) {
-                            $spravca->uloz($field, sanitize_text_field($input[$field]));
-                        }
-                    }
-                    break;
-                    
-                // ... existing code for other tabs ...
+            foreach ($input as $key => $value) {
+                // Sanitize hodnôt podľa typu
+                if (in_array($key, ['pos_width', 'pos_height', 'pos_columns'])) {
+                    $value = absint($value);
+                } elseif (is_string($value)) {
+                    $value = sanitize_text_field($value);
+                }
+                
+                // Uložíme hodnotu
+                $spravca->uloz($key, $value);
             }
             
             return true;
         } catch (\Exception $e) {
-            error_log('Chyba pri ukladaní nastavení: ' . $e->getMessage());
+            error_log('CL Plugin - Chyba pri ukladaní nastavení: ' . $e->getMessage());
             return false;
         }
     }

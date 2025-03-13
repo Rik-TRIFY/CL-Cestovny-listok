@@ -1,5 +1,17 @@
 <?php
 declare(strict_types=1);
+
+/**
+ * Hlavný dashboard administrácie
+ * 
+ * Zobrazuje:
+ * - Prehľad denných tržieb
+ * - Počet predaných lístkov
+ * - Rýchle štatistiky
+ * - Grafy predaja
+ * - Notifikácie a upozornenia
+ */
+
 if (!defined('ABSPATH')) exit;
 
 $db = new \CL\jadro\Databaza();

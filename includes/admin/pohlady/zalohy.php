@@ -1,5 +1,17 @@
 <?php
 declare(strict_types=1);
+
+/**
+ * Správa záloh systému
+ * 
+ * Umožňuje:
+ * - Vytváranie manuálnych záloh
+ * - Zobrazenie existujúcich záloh
+ * - Obnovu zo zálohy
+ * - Automatické zálohovanie
+ * - Správu úložiska záloh
+ */
+
 if (!defined('ABSPATH')) exit;
 
 $spravca = new \CL\jadro\SpravcaSuborov();

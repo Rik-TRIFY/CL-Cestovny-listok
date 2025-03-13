@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Správa typov lístkov
+ * 
+ * Umožňuje:
+ * - Pridávanie nových typov lístkov
+ * - Úpravu existujúcich lístkov
+ * - Aktiváciu/deaktiváciu lístkov
+ * - AJAX operácie pre správu lístkov
+ */
+
 namespace CL\Admin;
 
 class SpravcaListkov {

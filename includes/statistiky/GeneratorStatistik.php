@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Generátor štatistík predaja
+ * 
+ * Funkcionalita:
+ * - Generovanie denných štatistík predaja
+ * - Zoskupovanie dát podľa typov lístkov
+ * - Export do JSON formátu
+ * - Ukladanie do mesačných súborov
+ */
+
 namespace CL\Statistiky;
 
 class GeneratorStatistik {

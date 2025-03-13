@@ -1,5 +1,17 @@
 <?php
 declare(strict_types=1);
+
+/**
+ * História predajov
+ * 
+ * Funkcionalita:
+ * - Zobrazenie histórie predajov
+ * - Filtrovanie podľa dátumu
+ * - Detaily jednotlivých predajov
+ * - Možnosť stornovania
+ * - Opätovná tlač lístkov
+ */
+
 if (!defined('ABSPATH')) exit;
 
 $db = new \CL\jadro\Databaza();

@@ -1,13 +1,26 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Hlavná trieda pre POS terminál
+ * 
+ * Spracováva logiku pre:
+ * - Predaj lístkov
+ * - Správu košíka
+ * - Generovanie čísiel lístkov
+ * - Ukladanie predajov do DB
+ * - Tlač lístkov
+ */
+
 namespace CL\POS;
 
 class Terminal {
     private \CL\jadro\Databaza $databaza;
+    private \CL\jadro\SpravcaNastaveni $spravca;
 
     public function __construct() {
         $this->databaza = new \CL\jadro\Databaza();
+        $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'pridajDoKosika']);
         add_action('wp_ajax_cl_odstran_z_kosika', [$this, 'odstranZKosika']);
         add_action('wp_ajax_cl_dokonci_predaj', [$this, 'dokonciPredaj']);
@@ -19,6 +32,11 @@ class Terminal {
         }
         
         $predajca = wp_get_current_user();
+        
+        // Načítame nastavenia z našej DB
+        $layout = $this->spravca->nacitaj('pos_layout', 'grid');
+        $columns = $this->spravca->nacitaj('pos_columns', 4);
+        
         require CL_INCLUDES_DIR . 'pos/pohlady/terminal.php';
     }
 

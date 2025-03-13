@@ -1,9 +1,30 @@
 <?php
 declare(strict_types=1);
+
+/**
+ * Zobrazenie POS terminálu
+ * 
+ * Poskytuje:
+ * - Grid/List zobrazenie lístkov
+ * - Správu košíka
+ * - Dokončenie predaja
+ * - Históriu posledných predajov
+ * - Responzívny dizajn
+ */
+
 if (!defined('ABSPATH')) exit;
 
 global $wpdb;
 $databaza = new \CL\jadro\Databaza();
+$spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
+
+// Načítame nastavenia z našej DB
+$nastavenia = [
+    'pos_layout' => $spravca->nacitaj('pos_layout', 'grid'),
+    'pos_columns' => $spravca->nacitaj('pos_columns', 4),
+    'pos_width' => $spravca->nacitaj('pos_width', '375'),
+    'pos_height' => $spravca->nacitaj('pos_height', '667')
+];
 
 // Načítame aktívne lístky
 $listky = $wpdb->get_results(
@@ -26,11 +47,6 @@ if ($table_exists) {
         LIMIT 3"
     );
 }
-
-// Načítame nastavenia POS
-$nastavenia = get_option('cl_nastavenia');
-$pos_layout = $nastavenia['pos_layout'] ?? 'grid';
-$pos_columns = $nastavenia['pos_columns'] ?? 4;
 ?>
 
 <div class="cl-terminal-container">
@@ -41,8 +57,8 @@ $pos_columns = $nastavenia['pos_columns'] ?? 4;
         </div>
     </div>
 
-    <div class="cl-terminal <?php echo esc_attr($pos_layout); ?>">
-        <div class="cl-listky" style="grid-template-columns: repeat(<?php echo (int)$pos_columns; ?>, 1fr);">
+    <div class="cl-terminal <?php echo esc_attr($nastavenia['pos_layout']); ?>">
+        <div class="cl-listky" style="grid-template-columns: repeat(<?php echo (int)$nastavenia['pos_columns']; ?>, 1fr);">
             <?php foreach ($listky as $listok): ?>
                 <button class="cl-listok" 
                         data-id="<?php echo esc_attr($listok->id); ?>"

@@ -1,6 +1,18 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Hlavný súbor pluginu pre predaj cestovných lístkov
+ * 
+ * Zabezpečuje:
+ * - Inicializáciu pluginu a autoloading
+ * - Vytvorenie databázových tabuliek
+ * - Registráciu admin menu
+ * - Správu assets (CSS/JS)
+ * - Aktivačné/deaktivačné hooku
+ * - Kontrolu závislostí
+ */
+
 /*
 Plugin Name: CL - Cestovné lístky
 Description: Evidencia a predaj cestovných lístkov
@@ -168,199 +180,91 @@ class CestovneListky {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
         
-        // Najprv skontrolujeme či tabulka existuje
-        $table = $wpdb->prefix . 'cl_nastavenia';
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
-            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        // Kontrola a vytvorenie tabuliek v správnom poradí
+        $sql = [
+            // Tabuľka typov lístkov
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_typy_listkov` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                nazov varchar(100) NOT NULL,
+                text_listok varchar(200) NOT NULL,
+                cena decimal(10,2) NOT NULL,
+                aktivny boolean DEFAULT TRUE,
+                vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
+                aktualizovane datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY  (id)
+            ) $charset_collate;",
             
-            // Vytvoríme tabuľku nastavení
-            $sql = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_nastavenia` (
-                `id` mediumint(9) NOT NULL AUTO_INCREMENT,
-                `option_name` varchar(191) NOT NULL,
-                `option_value` longtext NOT NULL,
-                `autoload` varchar(20) NOT NULL DEFAULT 'yes',
-                `created` datetime DEFAULT CURRENT_TIMESTAMP,
-                `updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY  (`id`),
-                UNIQUE KEY `option_name` (`option_name`)
-            ) $charset_collate;";
+            // Tabuľka predajov
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_predaj` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                cislo_predaja varchar(50) NOT NULL,
+                predajca_id bigint(20) NOT NULL,
+                celkova_suma decimal(10,2) NOT NULL,
+                datum_predaja datetime DEFAULT CURRENT_TIMESTAMP,
+                storno boolean DEFAULT FALSE,
+                data_listka text,
+                PRIMARY KEY  (id),
+                KEY predajca_id (predajca_id)
+            ) $charset_collate;",
             
-            dbDelta($sql);
-            
-            // Vložíme predvolené hodnoty
-            $default_settings = [
-                'pos_width' => '375',
-                'pos_height' => '667',
-                'pos_layout' => 'grid',
-                'pos_columns' => '4',
-                'pos_button_size' => 'medium'
-            ];
+            // Tabuľka položiek predaja
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_polozky_predaja` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                predaj_id mediumint(9) NOT NULL,
+                typ_listka_id mediumint(9) NOT NULL,
+                pocet int NOT NULL,
+                cena_za_kus decimal(10,2) NOT NULL,
+                PRIMARY KEY  (id),
+                KEY predaj_id (predaj_id),
+                KEY typ_listka_id (typ_listka_id)
+            ) $charset_collate;",
 
-            foreach ($default_settings as $name => $value) {
-                $wpdb->insert(
-                    $wpdb->prefix . 'cl_nastavenia',
-                    [
-                        'option_name' => $name,
-                        'option_value' => $value
-                    ],
-                    ['%s', '%s']
-                );
-            }
-        }
-        
-        // Kontrola existencie tabuliek
-        $required_tables = [
-            $wpdb->prefix . 'cl_typy_listkov',
-            $wpdb->prefix . 'cl_predaj',
-            $wpdb->prefix . 'cl_polozky_predaja',
-            $wpdb->prefix . 'cl_nastavenia'  // Pridaná nová tabuľka
+            // Tabuľka nastavení
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_nastavenia` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                option_name varchar(191) NOT NULL,
+                option_value longtext NOT NULL,
+                autoload varchar(20) NOT NULL DEFAULT 'yes',
+                created datetime DEFAULT CURRENT_TIMESTAMP,
+                updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY  (id),
+                UNIQUE KEY option_name (option_name)
+            ) $charset_collate;"
         ];
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
-        $missing_tables = [];
-        foreach ($required_tables as $table) {
-            if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
-                $missing_tables[] = $table;
-            }
+        foreach ($sql as $query) {
+            dbDelta($query);
         }
         
-        // Ak chýbajú tabuľky, vytvoríme ich
-        if (!empty($missing_tables)) {
-            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        // Pridáme foreign keys v separátnych dotazoch
+        $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_polozky_predaja` 
+            ADD CONSTRAINT `fk_predaj` FOREIGN KEY (predaj_id) 
+            REFERENCES `{$wpdb->prefix}cl_predaj` (id) ON DELETE CASCADE");
             
-            $sql = [
-                // Tabuľka typov lístkov
-                "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_typy_listkov` (
-                    id mediumint(9) NOT NULL AUTO_INCREMENT,
-                    nazov varchar(100) NOT NULL,
-                    text_listok varchar(200) NOT NULL,
-                    cena decimal(10,2) NOT NULL,
-                    aktivny boolean DEFAULT TRUE,
-                    vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
-                    aktualizovane datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    PRIMARY KEY  (id)
-                ) $charset_collate",
-                
-                // Tabuľka predajov
-                "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_predaj` (
-                    id mediumint(9) NOT NULL AUTO_INCREMENT,
-                    cislo_predaja varchar(50) NOT NULL,
-                    predajca_id bigint(20) NOT NULL,
-                    celkova_suma decimal(10,2) NOT NULL,
-                    datum_predaja datetime DEFAULT CURRENT_TIMESTAMP,
-                    storno boolean DEFAULT FALSE,
-                    data_listka text,
-                    PRIMARY KEY  (id),
-                    KEY predajca_id (predajca_id)
-                ) $charset_collate",
-                
-                // Tabuľka položiek predaja
-                "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_polozky_predaja` (
-                    id mediumint(9) NOT NULL AUTO_INCREMENT,
-                    predaj_id mediumint(9) NOT NULL,
-                    typ_listka_id mediumint(9) NOT NULL,
-                    pocet int NOT NULL,
-                    cena_za_kus decimal(10,2) NOT NULL,
-                    PRIMARY KEY  (id),
-                    KEY predaj_id (predaj_id),
-                    KEY typ_listka_id (typ_listka_id),
-                    CONSTRAINT `fk_predaj` FOREIGN KEY (predaj_id) 
-                        REFERENCES `{$wpdb->prefix}cl_predaj` (id) ON DELETE CASCADE,
-                    CONSTRAINT `fk_typ_listka` FOREIGN KEY (typ_listka_id) 
-                        REFERENCES `{$wpdb->prefix}cl_typy_listkov` (id)
-                ) $charset_collate",
+        $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_polozky_predaja` 
+            ADD CONSTRAINT `fk_typ_listka` FOREIGN KEY (typ_listka_id) 
+            REFERENCES `{$wpdb->prefix}cl_typy_listkov` (id)");
 
-                // Pridáme novú tabuľku pre nastavenia
-                "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_nastavenia` (
-                    id mediumint(9) NOT NULL AUTO_INCREMENT,
-                    option_name varchar(191) NOT NULL,
-                    option_value longtext NOT NULL,
-                    autoload varchar(20) NOT NULL DEFAULT 'yes',
-                    created datetime DEFAULT CURRENT_TIMESTAMP,
-                    updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    PRIMARY KEY  (id),
-                    UNIQUE KEY option_name (option_name)
-                ) $charset_collate"
-            ];
-            
-            foreach ($sql as $query) {
-                dbDelta($query);
-            }
-            
-            // Zalogujeme vytvorenie chýbajúcich tabuliek
-            error_log('CL Plugin: Vytvorené chýbajúce tabuľky: ' . implode(', ', $missing_tables));
-
-            // Inicializácia základných nastavení ak tabuľka práve bola vytvorená
-            if (in_array($wpdb->prefix . 'cl_nastavenia', $missing_tables)) {
-                $default_settings = [
-                    'pos_width' => '375',
-                    'pos_height' => '667',
-                    'pos_layout' => 'grid',
-                    'pos_columns' => '4',
-                    'pos_button_size' => 'medium'
-                ];
-
-                foreach ($default_settings as $name => $value) {
-                    $wpdb->insert(
-                        $wpdb->prefix . 'cl_nastavenia',
-                        [
-                            'option_name' => $name,
-                            'option_value' => $value
-                        ],
-                        ['%s', '%s']
-                    );
-                }
-            }
-        }
-    }
-
-    private function vytvorTabulky(): void {
-        global $wpdb;
-        $charset_collate = $wpdb->get_charset_collate();
-        
-        // Kontrola existencie tabuliek
-        $required_tables = [
-            'cl_typy_listkov',
-            'cl_predaj',
-            'cl_polozky_predaja',
-            'cl_nastavenia'
+        // Inicializácia základných nastavení ak tabuľka práve bola vytvorená
+        $defaultSettings = [
+            'pos_width' => '375',
+            'pos_height' => '667',
+            'pos_layout' => 'grid',
+            'pos_columns' => '4',
+            'pos_button_size' => 'medium'
         ];
-        
-        $missing_tables = [];
-        foreach ($required_tables as $table) {
-            $table_name = $wpdb->prefix . $table;
-            if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-                $missing_tables[] = $table;
-            }
-        }
-        
-        if (!empty($missing_tables)) {
-            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-            
-            // Vytvoríme chýbajúce tabuľky
-            foreach ($missing_tables as $table) {
-                $sql = "";
-                switch ($table) {
-                    case 'cl_nastavenia':
-                        $sql = "CREATE TABLE `{$wpdb->prefix}cl_nastavenia` (
-                            id mediumint(9) NOT NULL AUTO_INCREMENT,
-                            option_name varchar(191) NOT NULL,
-                            option_value longtext NOT NULL,
-                            autoload varchar(20) NOT NULL DEFAULT 'yes',
-                            created datetime DEFAULT CURRENT_TIMESTAMP,
-                            updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                            PRIMARY KEY  (id),
-                            UNIQUE KEY option_name (option_name)
-                        ) $charset_collate;";
-                        break;
-                    // ... existing cases for other tables ...
-                }
-                
-                if (!empty($sql)) {
-                    dbDelta($sql);
-                }
-            }
-            
-            error_log('CL Plugin: Vytvorené chýbajúce tabuľky: ' . implode(', ', $missing_tables));
+
+        foreach ($defaultSettings as $name => $value) {
+            $wpdb->replace(
+                $wpdb->prefix . 'cl_nastavenia',
+                [
+                    'option_name' => $name,
+                    'option_value' => $value
+                ],
+                ['%s', '%s']
+            );
         }
     }
 
@@ -503,10 +407,6 @@ class CestovneListky {
         (new Admin\SpravcaArchivu())->zobrazArchiv();
     }
 
-    public function zobrazExport(): void {
-        require_once CL_INCLUDES_DIR . 'admin/pohlady/export.php';
-    }
-
     public function zobrazZalohy(): void {
         require_once CL_INCLUDES_DIR . 'admin/pohlady/zalohy.php';
     }
@@ -517,10 +417,6 @@ class CestovneListky {
 
     public function zobrazStatistiky(): void {
         require_once CL_INCLUDES_DIR . 'admin/pohlady/statistiky.php';
-    }
-
-    public function zobrazImport(): void {
-        require_once CL_INCLUDES_DIR . 'admin/pohlady/import.php';
     }
 
     public function zobrazLogy(): void {
@@ -570,13 +466,7 @@ class CestovneListky {
             wp_die('Nedostatočné oprávnenia');
         }
         
-        $akcia = $_GET['akcia'] ?? 'import';
-        
-        if ($akcia === 'export') {
-            require CL_INCLUDES_DIR . 'admin/pohlady/export.php';
-        } else {
-            require CL_INCLUDES_DIR . 'admin/pohlady/import.php';
-        }
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/import-export.php';
     }
 }
 
