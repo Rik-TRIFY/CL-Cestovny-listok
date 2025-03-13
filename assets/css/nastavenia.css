@@ -68,7 +68,7 @@
 
 /* Náhľad lístka */
 #cl-listok-preview {
-    width: 54mm;
+    width: 48mm;  /* Zmena na 48mm */
     margin: 0 auto;
     padding: 10px;
     background: #fff;
@@ -150,7 +150,7 @@
 }
 
 .cl-preview-window {
-    width: 54mm;
+    width: 48mm;  /* Zmena na 48mm */
     min-height: 200px;
     margin: 0 auto;
     padding: 10px;
@@ -215,7 +215,7 @@
 }
 
 .cl-preview-window {
-    width: 54mm;
+    width: 48mm;  /* Zmena na 48mm */
     min-height: 200px;
     margin: 20px auto;
     padding: 10px;
@@ -437,4 +437,15 @@
     #cl-device-frame {
         transform: scale(0.8);
     }
+}
+
+/* Textarea pre HTML kód */
+textarea.code {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    tab-size: 4;
+    white-space: pre;
+    word-wrap: normal;
+    overflow: auto;
 }

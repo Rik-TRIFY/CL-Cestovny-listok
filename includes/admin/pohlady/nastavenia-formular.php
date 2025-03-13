@@ -52,30 +52,12 @@ $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
                         <div class="cl-grid-left">
                             <div class="cl-editor-box">
                                 <h3>HTML šablóna lístka</h3>
-                                <?php
-                                wp_editor(
-                                    $spravca->nacitaj('listok_sablona'),
-                                    'sablona-listka',
-                                    [
-                                        'media_buttons' => true,
-                                        'textarea_name' => 'cl_nastavenia[sablona_listka]',
-                                        'textarea_rows' => 20,
-                                        'teeny' => false,
-                                        'wpautop' => false,
-                                        'tinymce' => [
-                                            'verify_html' => false,
-                                            'cleanup' => false,
-                                            'forced_root_block' => false,
-                                            'valid_styles' => '*[*]',
-                                            'extended_valid_elements' => '*[*]',
-                                            'remove_linebreaks' => false,
-                                            'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_adv,cl_variables',
-                                            'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
-                                            'content_css' => CL_ASSETS_URL . 'css/editor-style.css'
-                                        ]
-                                    ]
-                                );
-                                ?>
+                                <textarea id="sablona-listka" 
+                                          name="cl_nastavenia[sablona_listka]" 
+                                          rows="20" 
+                                          class="large-text code"><?php 
+                                    echo esc_textarea($spravca->nacitaj('listok_sablona')); 
+                                ?></textarea>
                                 <p class="description">
                                     Použite premenné: {datum}, {cas}, {predajca}, {logo}, {polozky}, {suma}, {cislo_listka}<br>
                                     Sekcia {polozky} bude automaticky nahradená položkami z predaja.
@@ -151,30 +133,12 @@ $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
                         <div class="cl-grid-left">
                             <div class="cl-editor-box">
                                 <h3>HTML šablóna POS terminálu</h3>
-                                <?php
-                                wp_editor(
-                                    $spravca->nacitaj('pos_sablona'),
-                                    'sablona-pos',
-                                    [
-                                        'media_buttons' => true,
-                                        'textarea_name' => 'cl_nastavenia[pos_sablona]',
-                                        'textarea_rows' => 20,
-                                        'teeny' => false,
-                                        'wpautop' => false,
-                                        'tinymce' => [
-                                            'verify_html' => false,
-                                            'cleanup' => false,
-                                            'forced_root_block' => false,
-                                            'valid_styles' => '*[*]',
-                                            'extended_valid_elements' => '*[*]',
-                                            'remove_linebreaks' => false,
-                                            'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_adv,cl_pos_variables',
-                                            'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
-                                            'content_css' => CL_ASSETS_URL . 'css/pos-editor-style.css'
-                                        ]
-                                    ]
-                                );
-                                ?>
+                                <textarea id="sablona-pos" 
+                                          name="cl_nastavenia[pos_sablona]" 
+                                          rows="20" 
+                                          class="large-text code"><?php 
+                                    echo esc_textarea($spravca->nacitaj('pos_sablona')); 
+                                ?></textarea>
                                 <p class="description">
                                     Dostupné premenné:<br>
                                     {pos_header} - hlavička s logom a menom predajcu<br>

@@ -19,9 +19,10 @@ class Nastavenia {
     public function __construct() {
         $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         add_action('admin_init', [$this, 'registrujNastavenia']);
-        add_action('admin_enqueue_scripts', [$this, 'pridajMedia']);
-        add_filter('mce_buttons', [$this, 'registrujTlacitka']);
-        add_filter('mce_external_plugins', [$this, 'registrujPlugin']);
+        // Odstránime nepotrebné hooku pre TinyMCE
+        // add_action('admin_enqueue_scripts', [$this, 'pridajMedia']);
+        // add_filter('mce_buttons', [$this, 'registrujTlacitka']);
+        // add_filter('mce_external_plugins', [$this, 'registrujPlugin']);
     }
 
     public function pridajMedia($hook): void {

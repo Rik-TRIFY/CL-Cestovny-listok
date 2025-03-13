@@ -124,8 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Test tlače
     document.getElementById('preview-print')?.addEventListener('click', function() {
-        // Získame obsah z TinyMCE editora
-        const content = tinymce.get('sablona-listka').getContent();
+        // Namiesto toho použijeme priamo hodnotu z textarea
+        const content = document.getElementById('sablona-listka').value;
         let html = content;
 
         // Nahradíme premenné testovacími dátami
@@ -163,12 +163,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <style>
                     @media print {
                         body {
-                            width: 54mm;
+                            width: 48mm;  /* Zmena na 48mm */
                             margin: 0;
                             padding: 0;
                         }
                         @page {
-                            size: 54mm auto;
+                            size: 48mm auto;  /* Zmena na 48mm */
                             margin: 0;
                         }
                     }
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Pridáme funkciu pre náhľad POS terminálu
     function aktualizujPosNahlad() {
-        const content = tinymce.get('sablona-pos').getContent();
+        const content = document.getElementById('sablona-pos').value;
         const preview = document.getElementById('cl-pos-preview');
         
         if (!preview) return;
@@ -433,8 +433,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Pridáme event listenery pre POS náhľad
     document.getElementById('pos-preview-refresh')?.addEventListener('click', aktualizujPosNahlad);
     
-    if (tinymce.get('sablona-pos')) {
-        tinymce.get('sablona-pos').on('change', function() {
+    const posTextarea = document.getElementById('sablona-pos');
+    if (posTextarea) {
+        posTextarea.addEventListener('input', function() {
             if (document.getElementById('pos-preview-auto-refresh').checked) {
                 aktualizujPosNahlad();
             }
@@ -446,4 +447,54 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Spustiť náhľad pri načítaní
     aktualizujNahlad();
+
+    // Lístok preview
+    const listokTextarea = document.getElementById('sablona-listka');
+    const listokPreview = document.getElementById('cl-listok-preview');
+    const listokAutoRefresh = document.getElementById('preview-auto-refresh');
+
+    function aktualizujNahladListka() {
+        if (!listokTextarea || !listokPreview) return;
+        
+        let html = listokTextarea.value;
+        
+        // Demo dáta pre náhľad
+        const demoData = {
+            logo: '<img src="/test-logo.png" style="max-width:100%">',
+            datum: '01.03.2024',
+            cas: '14:30',
+            cislo_listka: '20240301-0001',
+            predajca: 'Test Predajca',
+            polozky: '<div class="polozka">Cestovný lístok základný<br>2x 1.20€ = 2.40€</div>',
+            suma: '2.40€'
+        };
+
+        // Nahradíme premenné
+        Object.entries(demoData).forEach(([key, value]) => {
+            html = html.replace(new RegExp(`{${key}}`, 'g'), value);
+        });
+
+        listokPreview.innerHTML = html;
+    }
+
+    // Event listeners pre lístok
+    if (listokTextarea) {
+        listokTextarea.addEventListener('input', () => {
+            if (listokAutoRefresh?.checked) {
+                aktualizujNahladListka();
+            }
+        });
+    }
+
+    document.getElementById('preview-refresh')?.addEventListener('click', aktualizujNahladListka);
+
+    // Spustíme prvé načítanie náhľadu
+    aktualizujNahladListka();
+
+    // POS Terminal preview
+    const terminalTextarea = document.getElementById('sablona-pos');
+    const terminalPreview = document.getElementById('pos-terminal-preview');
+    const terminalAutoRefresh = document.getElementById('pos-preview-auto-refresh');
+
+    // ...rest of existing code...
 });
