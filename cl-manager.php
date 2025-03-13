@@ -289,6 +289,7 @@ class CestovneListky {
         wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
         wp_enqueue_style('cl-listky', CL_ASSETS_URL . 'css/listky.css', [], CL_VERSION);
         wp_enqueue_style('cl-import-export', CL_ASSETS_URL . 'css/import-export.css', [], CL_VERSION);
+        wp_enqueue_style('cl-statistiky', CL_ASSETS_URL . 'css/statistiky.css', [], CL_VERSION);
         
         // JavaScript
         wp_enqueue_script('cl-listky', CL_ASSETS_URL . 'js/listky.js', ['jquery'], CL_VERSION, true);

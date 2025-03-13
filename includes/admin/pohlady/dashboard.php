@@ -24,17 +24,5 @@ $pocet_predanych = $db->nacitaj("SELECT COUNT(*) as pocet FROM `{$wpdb->prefix}c
                 <span class="cl-big-number"><?php echo $pocet_predanych; ?></span>
             </div>
         </div>
-
-        <div class="cl-dashboard-widget">
-            <h3>Štatistiky</h3>
-            <div class="cl-widget-content">
-                <button id="generuj-statistiky" class="button button-primary">
-                    Generovať štatistiky
-                </button>
-                <p class="description">Posledné generovanie: 
-                    <?php echo get_option('cl_posledne_generovanie_statistik', 'nikdy'); ?>
-                </p>
-            </div>
-        </div>
     </div>
 </div>

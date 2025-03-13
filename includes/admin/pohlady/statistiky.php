@@ -7,6 +7,20 @@ if (!defined('ABSPATH')) exit;
     <h1>Štatistiky predaja</h1>
     
     <div class="cl-stats-container">
+        <!-- Generovanie štatistík box -->
+        <div class="cl-stats-generator">
+            <h3>Generovanie štatistík</h3>
+            <div class="cl-generator-content">
+                <button id="generuj-statistiky" class="button button-primary">
+                    Generovať štatistiky
+                </button>
+                <p class="description">Posledné generovanie: 
+                    <?php echo get_option('cl_posledne_generovanie_statistik', 'nikdy'); ?>
+                </p>
+            </div>
+        </div>
+
+        <!-- Filtre -->
         <div class="cl-stats-filters">
             <select id="cl-stats-obdobie">
                 <option value="den">Deň</option>

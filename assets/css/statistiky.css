@@ -1,0 +1,55 @@
+.cl-stats-container {
+    margin-top: 20px;
+}
+
+.cl-stats-generator {
+    float: right;
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    width: 300px;
+}
+
+.cl-stats-generator h3 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.cl-generator-content {
+    text-align: center;
+}
+
+.cl-generator-content .button {
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.cl-generator-content .description {
+    font-style: italic;
+    color: #666;
+    margin: 0;
+}
+
+.cl-stats-filters {
+    clear: both;
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+#cl-stats-obdobie {
+    min-width: 120px;
+}
+
+.cl-stats-filters input[type="date"] {
+    width: 150px;
+}
