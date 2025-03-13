@@ -10,17 +10,22 @@ $listky = $wpdb->get_results(
     "SELECT * FROM `{$wpdb->prefix}cl_typy_listkov` WHERE aktivny = TRUE ORDER BY id ASC"
 );
 
-// Načítame posledné predaje
-$posledne_predaje = $wpdb->get_results("
-    SELECT p.*, GROUP_CONCAT(pp.pocet, 'x ', tl.nazov SEPARATOR ', ') as polozky
-    FROM `{$wpdb->prefix}cl_predaj` p
-    LEFT JOIN `{$wpdb->prefix}cl_polozky_predaja` pp ON p.id = pp.predaj_id
-    LEFT JOIN `{$wpdb->prefix}cl_typy_listkov` tl ON pp.typ_listka_id = tl.id
-    WHERE p.predajca_id = " . get_current_user_id() . "
-    GROUP BY p.id
-    ORDER BY p.datum_predaja DESC
-    LIMIT 3"
-);
+// Upravíme SQL dopyt aby používal správny prefix a kontroloval existenciu tabuliek
+$posledne_predaje = [];
+$table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}cl_polozky_predaja'");
+
+if ($table_exists) {
+    $posledne_predaje = $wpdb->get_results("
+        SELECT p.*, GROUP_CONCAT(pp.pocet, 'x ', tl.nazov SEPARATOR ', ') as polozky
+        FROM `{$wpdb->prefix}cl_predaj` p
+        LEFT JOIN `{$wpdb->prefix}cl_polozky_predaja` pp ON p.id = pp.predaj_id
+        LEFT JOIN `{$wpdb->prefix}cl_typy_listkov` tl ON pp.typ_listka_id = tl.id
+        WHERE p.predajca_id = " . get_current_user_id() . "
+        GROUP BY p.id
+        ORDER BY p.datum_predaja DESC
+        LIMIT 3"
+    );
+}
 
 // Načítame nastavenia POS
 $nastavenia = get_option('cl_nastavenia');

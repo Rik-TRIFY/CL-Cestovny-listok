@@ -1,0 +1,68 @@
+<?php
+declare(strict_types=1);
+
+namespace CL\jadro;
+
+class SpravcaNastaveni {
+    private \wpdb $wpdb;
+    private static ?self $instancia = null;
+
+    public static function ziskajInstanciu(): self {
+        if (self::$instancia === null) {
+            self::$instancia = new self();
+        }
+        return self::$instancia;
+    }
+
+    private function __construct() {
+        global $wpdb;
+        $this->wpdb = $wpdb;
+    }
+
+    public function uloz(string $name, $value): bool {
+        try {
+            $this->wpdb->replace(
+                $this->wpdb->prefix . 'cl_nastavenia',
+                [
+                    'option_name' => $name,
+                    'option_value' => is_array($value) ? json_encode($value) : $value
+                ],
+                ['%s', '%s']
+            );
+            return true;
+        } catch (\Exception $e) {
+            error_log('Chyba pri ukladaní nastavenia: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function nacitaj(string $name, $default = null) {
+        $value = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT option_value FROM {$this->wpdb->prefix}cl_nastavenia WHERE option_name = %s",
+            $name
+        ));
+
+        if ($value === null) {
+            return $default;
+        }
+
+        // Skúsime dekódovať JSON
+        $decoded = json_decode($value, true);
+        return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $value;
+    }
+
+    public function zmaz(string $name): bool {
+        return (bool)$this->wpdb->delete(
+            $this->wpdb->prefix . 'cl_nastavenia',
+            ['option_name' => $name],
+            ['%s']
+        );
+    }
+
+    public function existuje(string $name): bool {
+        return (bool)$this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->wpdb->prefix}cl_nastavenia WHERE option_name = %s",
+            $name
+        ));
+    }
+}

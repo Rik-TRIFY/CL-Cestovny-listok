@@ -241,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const posPreview = document.getElementById('cl-pos-preview');
     const widthInput = document.getElementById('cl-width');
     const heightInput = document.getElementById('cl-height');
+    const posWidthInput = document.getElementById('pos_width');
+    const posHeightInput = document.getElementById('pos_height');
 
     const deviceSizes = {
         'custom': null,
@@ -252,10 +254,18 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function updatePreviewSize(width, height) {
-        deviceFrame.style.width = width + 'px';
-        deviceFrame.style.height = height + 'px';
-        posPreview.style.width = width + 'px';
-        posPreview.style.height = height + 'px';
+        if (deviceFrame && posPreview) {
+            deviceFrame.style.width = width + 'px';
+            deviceFrame.style.height = height + 'px';
+            posPreview.style.width = width + 'px';
+            posPreview.style.height = height + 'px';
+        }
+
+        // Aktualizujeme hidden inputy pre uloženie
+        if (posWidthInput && posHeightInput) {
+            posWidthInput.value = width;
+            posHeightInput.value = height;
+        }
     }
 
     deviceSelect?.addEventListener('change', function() {
@@ -298,12 +308,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const posHeight = document.getElementById('pos_height');
             
             if (posWidth && posHeight) {
-                // Aktualizujeme hidden inputy
+                // Nastavíme hodnoty do hidden inputov
                 posWidth.value = widthInput.value;
                 posHeight.value = heightInput.value;
+                
+                // Pre kontrolu vypisujeme do konzoly
+                console.log('Nastavujem rozlíšenie:', {
+                    width: widthInput.value,
+                    height: heightInput.value,
+                    posWidth: posWidth.value,
+                    posHeight: posHeight.value
+                });
             }
             
-            // Aktualizujeme náhľad
             updatePreviewSize(widthInput.value, heightInput.value);
         });
     });
@@ -320,18 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
             deviceSelect.value = 'custom';
             customResolution.style.display = 'flex';
         }
-    }
-
-    // Načítanie uložených hodnôt pri inicializácii
-    const savedWidth = document.getElementById('pos_width')?.value;
-    const savedHeight = document.getElementById('pos_height')?.value;
-    
-    if (savedWidth && savedHeight) {
-        widthInput.value = savedWidth;
-        heightInput.value = savedHeight;
-        updatePreviewSize(savedWidth, savedHeight);
-        deviceSelect.value = 'custom';
-        customResolution.style.display = 'flex';
     }
 
     // Inicializácia náhľadu

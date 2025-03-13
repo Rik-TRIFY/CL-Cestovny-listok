@@ -177,23 +177,67 @@ Redundantné uloženie:
 
 ŠTRUKTÚRA TABULIEK:
 ------------------
-cl_typy_listkov:
-- id (mediumint, AUTO_INCREMENT)
-- nazov (varchar 100) - interný názov pre správu a štatistiky
-- text_listok (varchar 200) - text ktorý sa zobrazí na vytlačenom lístku
-- cena (decimal 10,2)
-- aktivny (boolean) - predvolene TRUE
-- vytvorene (datetime) - auto CURRENT_TIMESTAMP
-- aktualizovane (datetime) - auto CURRENT_TIMESTAMP ON UPDATE
+1. wp_cl_typy_listkov
+   - id (mediumint, AUTO_INCREMENT)
+   - nazov (varchar 100) - interný názov pre správu a štatistiky
+   - text_listok (varchar 200) - text ktorý sa zobrazí na vytlačenom lístku
+   - cena (decimal 10,2)
+   - aktivny (boolean) - predvolene TRUE
+   - vytvorene (datetime) - auto CURRENT_TIMESTAMP
+   - aktualizovane (datetime) - auto CURRENT_TIMESTAMP ON UPDATE
 
-cl_predaj:
-- id (mediumint, AUTO_INCREMENT)
-- typ_listka_id (mediumint) - FK na cl_typy_listkov
-- pocet (int)
-- celkova_cena (decimal 10,2)
-- predajca_id (bigint) - FK na wp_users
-- datum_predaja (datetime) - auto CURRENT_TIMESTAMP
-- storno (boolean) - predvolene FALSE
+2. wp_cl_predaj
+   - id (mediumint, AUTO_INCREMENT)
+   - cislo_predaja (varchar 50) - formát RRRRMMDD-XXXX
+   - predajca_id (bigint) - FK na wp_users
+   - celkova_suma (decimal 10,2)
+   - datum_predaja (datetime) - auto CURRENT_TIMESTAMP
+   - storno (boolean) - predvolene FALSE
+   - data_listka (text) - JSON data pre tlač
+
+3. wp_cl_polozky_predaja
+   - id (mediumint, AUTO_INCREMENT)
+   - predaj_id (mediumint) - FK na cl_predaj
+   - typ_listka_id (mediumint) - FK na cl_typy_listkov
+   - pocet (int)
+   - cena_za_kus (decimal 10,2)
+
+4. wp_cl_nastavenia
+   - id (mediumint, AUTO_INCREMENT)
+   - option_name (varchar 191)
+   - option_value (longtext)
+   - autoload (varchar 20) - predvolene 'yes'
+   - created (datetime) - auto CURRENT_TIMESTAMP
+   - updated (datetime) - auto CURRENT_TIMESTAMP ON UPDATE
+
+POZNÁMKY K TABUĽKÁM:
+-------------------
+- Všetky tabuľky používajú prefix wp_ (konfigurovateľné cez WordPress)
+- Všetky tabuľky používajú engine InnoDB pre podporu transakcií
+- FK constrainty pre referencovanú integritu
+- Indexy na často používané stĺpce
+- Automatické časové značky pre audit zmien
+
+POUŽÍVANIE:
+----------
+1. cl_typy_listkov 
+   - Základné typy lístkov a ich ceny
+   - Možnosť deaktivácie bez vymazania
+   
+2. cl_predaj
+   - Hlavička každého predaja
+   - Obsahuje celkovú sumu a údaje o predajcovi
+   - Storno flag pre stornovanie bez vymazania
+   
+3. cl_polozky_predaja
+   - Detaily každého predaja
+   - Väzba na konkrétny typ lístka
+   - Zachováva cenu v čase predaja
+   
+4. cl_nastavenia
+   - Všetky konfiguračné nastavenia pluginu
+   - Rýchly prístup cez autoload
+   - Perzistentné nastavenia aj po deaktivácii
 
 14. TYPY SÚBOROV
 --------------

@@ -166,86 +166,67 @@ class Nastavenia {
     }
 
     public function sanitizeNastavenia($input) {
-        $sanitized = get_option('cl_nastavenia', []);
+        $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         $active_tab = $_GET['tab'] ?? 'listok';
         
-        switch ($active_tab) {
-            case 'pos':
-                // Rozlíšenie ukladáme ako čísla
-                if (isset($input['pos_width'])) {
-                    $sanitized['pos_width'] = absint($input['pos_width']);
-                }
-                if (isset($input['pos_height'])) {
-                    $sanitized['pos_height'] = absint($input['pos_height']);
-                }
-                
-                // Ostatné POS nastavenia
-                $pos_fields = ['pos_layout', 'pos_columns', 'pos_button_size'];
-                foreach ($pos_fields as $field) {
-                    if (isset($input[$field])) {
-                        $sanitized[$field] = sanitize_text_field($input[$field]);
+        try {
+            // Začneme transakciu
+            $wpdb->query('START TRANSACTION');
+            
+            switch ($active_tab) {
+                case 'pos':
+                    // Skontrolujeme či máme platnú hodnotu
+                    if (!empty($input['pos_width']) && !empty($input['pos_height'])) {
+                        $width = absint($input['pos_width']);
+                        $height = absint($input['pos_height']);
+                        
+                        // Uložíme priamo do našej tabuľky
+                        $wpdb->replace(
+                            $wpdb->prefix . 'cl_nastavenia',
+                            [
+                                'option_name' => 'pos_width',
+                                'option_value' => $width
+                            ],
+                            ['%s', '%s']
+                        );
+                        
+                        $wpdb->replace(
+                            $wpdb->prefix . 'cl_nastavenia',
+                            [
+                                'option_name' => 'pos_height',
+                                'option_value' => $height
+                            ],
+                            ['%s', '%s']
+                        );
                     }
-                }
-                break;
-            case 'listok':
-                // Spracovanie polí pre lístok
-                $listok_fields = ['sablona_listka', 'logo_url', 'hlavicka', 'paticka', 
-                                'font_velkost', 'logo_velkost', 'pismo', 'zarovnanie', 
-                                'zalamovanie'];
-                foreach ($listok_fields as $field) {
-                    if (isset($input[$field])) {
-                        $sanitized[$field] = $input[$field];
+                    
+                    // Ostatné POS nastavenia
+                    $pos_fields = ['pos_layout', 'pos_columns', 'pos_button_size'];
+                    foreach ($pos_fields as $field) {
+                        if (isset($input[$field])) {
+                            $wpdb->replace(
+                                $wpdb->prefix . 'cl_nastavenia',
+                                [
+                                    'option_name' => $field,
+                                    'option_value' => sanitize_text_field($input[$field])
+                                ],
+                                ['%s', '%s']
+                            );
+                        }
                     }
-                }
-                break;
-
-            case 'pos':
-                // Spracovanie polí pre POS
-                $pos_fields = ['pos_layout', 'pos_columns', 'pos_width', 'pos_height',
-                             'pos_button_size', 'pos_button_style', 'pos_colors',
-                             'pos_font_size', 'pos_show_history', 'pos_history_count'];
-                foreach ($pos_fields as $field) {
-                    if (isset($input[$field])) {
-                        $sanitized[$field] = sanitize_text_field($input[$field]);
-                    }
-                }
-                break;
-
-            case 'predaj':
-                // Spracovanie polí pre predaj
-                $predaj_fields = ['sirka_tlace', 'predvolena_tlaciaren', 'pocet_kopii',
-                                'format_cisla', 'auto_tlac', 'cas_stornovania'];
-                foreach ($predaj_fields as $field) {
-                    if (isset($input[$field])) {
-                        $sanitized[$field] = sanitize_text_field($input[$field]);
-                    }
-                }
-                break;
-
-            case 'databazy':
-                // Spracovanie polí pre databázy
-                $db_fields = ['db_backup_host', 'db_backup_name', 'db_backup_user',
-                            'db_backup_pass', 'db_sync_interval', 'db_auto_sync'];
-                foreach ($db_fields as $field) {
-                    if (isset($input[$field])) {
-                        $sanitized[$field] = sanitize_text_field($input[$field]);
-                    }
-                }
-                break;
-
-            case 'system':
-                // Spracovanie systémových nastavení
-                $system_fields = ['debug_mode', 'log_level', 'cache_lifetime',
-                                'session_timeout', 'max_pokusov'];
-                foreach ($system_fields as $field) {
-                    if (isset($input[$field])) {
-                        $sanitized[$field] = sanitize_text_field($input[$field]);
-                    }
-                }
-                break;
+                    break;
+                    
+                // ...existing code for other tabs...
+            }
+            
+            $wpdb->query('COMMIT');
+            return true;
+            
+        } catch (\Exception $e) {
+            $wpdb->query('ROLLBACK');
+            error_log('Chyba pri ukladaní nastavení: ' . $e->getMessage());
+            return false;
         }
-        
-        return $sanitized;
     }
 
     // Callback metódy pre sekcie

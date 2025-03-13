@@ -173,6 +173,15 @@ if (!defined('ABSPATH')) exit;
                                         <input type="number" id="cl-width" placeholder="Šírka" value="375" min="280" max="1920">
                                         <span>×</span>
                                         <input type="number" id="cl-height" placeholder="Výška" value="667" min="400" max="1920">
+                                        
+                                        <?php
+                                        // Pridáme hidden inputy s aktuálnymi hodnotami z DB
+                                        $nastavenia = get_option('cl_nastavenia');
+                                        $saved_width = $nastavenia['pos_width'] ?? '375';
+                                        $saved_height = $nastavenia['pos_height'] ?? '667';
+                                        ?>
+                                        <input type="hidden" name="cl_nastavenia[pos_width]" id="pos_width" value="<?php echo esc_attr($saved_width); ?>">
+                                        <input type="hidden" name="cl_nastavenia[pos_height]" id="pos_height" value="<?php echo esc_attr($saved_height); ?>">
                                     </div>
                                 </div>
                                 <div id="cl-device-frame">
