@@ -18,7 +18,7 @@ class Nastavenia {
     public function registrujNastavenia(): void {
         register_setting('cl_nastavenia', 'cl_nastavenia');
         
-        // Základné nastavenia lístka
+        // Vzhľad lístka
         add_settings_section(
             'cl_sekcia_listok',
             'Nastavenia vzhľadu lístka',
@@ -70,6 +70,14 @@ class Nastavenia {
             'cl_auto_tlac',
             'Automatická tlač',
             [$this, 'zobrazInputAutoTlac'],
+            'cl-nastavenia',
+            'cl_sekcia_predaj'
+        );
+
+        add_settings_field(
+            'cl_sirka_tlace',
+            'Šírka tlačiarne',
+            [$this, 'zobrazInputSirkaTlace'],
             'cl-nastavenia',
             'cl_sekcia_predaj'
         );
@@ -137,6 +145,78 @@ class Nastavenia {
             'cl-nastavenia',
             'cl_sekcia_notifikacie'
         );
+
+        // Systémové nastavenia
+        add_settings_section(
+            'cl_sekcia_system',
+            'Systémové nastavenia',
+            [$this, 'zobrazSekciuSystem'],
+            'cl-nastavenia'
+        );
+
+        add_settings_field(
+            'cl_debug_mode',
+            'Debug mód',
+            [$this, 'zobrazInputDebugMode'],
+            'cl-nastavenia',
+            'cl_sekcia_system'
+        );
+
+        add_settings_field(
+            'cl_cache_lifetime',
+            'Životnosť cache',
+            [$this, 'zobrazInputCacheLifetime'],
+            'cl-nastavenia',
+            'cl_sekcia_system'
+        );
+
+        // Nastavenia databáz
+        add_settings_section(
+            'cl_sekcia_databazy',
+            'Nastavenia databáz',
+            [$this, 'zobrazSekciuDatabazy'],
+            'cl-nastavenia'
+        );
+
+        add_settings_field(
+            'cl_db_backup_host',
+            'Adresa záložnej DB',
+            [$this, 'zobrazInputDbHost'],
+            'cl-nastavenia',
+            'cl_sekcia_databazy'
+        );
+
+        add_settings_field(
+            'cl_db_backup_name',
+            'Názov záložnej DB',
+            [$this, 'zobrazInputDbName'],
+            'cl-nastavenia',
+            'cl_sekcia_databazy'
+        );
+
+        add_settings_field(
+            'cl_db_backup_user',
+            'Používateľ záložnej DB',
+            [$this, 'zobrazInputDbUser'],
+            'cl-nastavenia',
+            'cl_sekcia_databazy'
+        );
+
+        add_settings_field(
+            'cl_db_backup_pass',
+            'Heslo záložnej DB',
+            [$this, 'zobrazInputDbPass'],
+            'cl-nastavenia',
+            'cl_sekcia_databazy'
+        );
+
+        add_settings_field(
+            'cl_db_sync_interval',
+            'Interval kontroly synchronizácie',
+            [$this, 'zobrazInputDbSyncInterval'],
+            'cl-nastavenia',
+            'cl_sekcia_databazy'
+        );
     }
 
     // Callback metódy pre sekcie
@@ -158,6 +238,14 @@ class Nastavenia {
 
     public function zobrazSekciuStatistiky(): void {
         echo '<p>Nastavenia pre štatistiky.</p>';
+    }
+
+    public function zobrazSekciuSystem(): void {
+        echo '<p>Systémové nastavenia.</p>';
+    }
+
+    public function zobrazSekciuDatabazy(): void {
+        echo '<p>Nastavenia záložnej databázy a synchronizácie. Pri zmene nastavení sa automaticky otestuje pripojenie.</p>';
     }
 
     // Callback metódy pre polia
@@ -276,6 +364,98 @@ class Nastavenia {
         <p class="description">
             E-mailová adresa pre zasielanie notifikácií.
         </p>
+        <?php
+    }
+
+    public function zobrazInputSirkaTlace(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $sirka = $nastavenia['sirka_tlace'] ?? '54';
+        ?>
+        <select name="cl_nastavenia[sirka_tlace]">
+            <option value="54" <?php selected($sirka, '54'); ?>>54mm (štandardná)</option>
+            <option value="80" <?php selected($sirka, '80'); ?>>80mm</option>
+        </select>
+        <p class="description">
+            Vyberte šírku vašej tlačiarne. Toto nastavenie ovplyvní formátovanie lístka.
+        </p>
+        <?php
+    }
+
+    public function zobrazInputDebugMode(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $debug = $nastavenia['debug_mode'] ?? '0';
+        ?>
+        <label>
+            <input type="checkbox" name="cl_nastavenia[debug_mode]" value="1" <?php checked($debug, '1'); ?>>
+            Povoliť rozšírené logovanie
+        </label>
+        <p class="description">
+            V debug móde sa budú zapisovať detailné informácie o operáciách do logov.
+            Používajte len pri riešení problémov.
+        </p>
+        <?php
+    }
+
+    public function zobrazInputCacheLifetime(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $lifetime = $nastavenia['cache_lifetime'] ?? '3600';
+        ?>
+        <input type="number" name="cl_nastavenia[cache_lifetime]" value="<?php echo esc_attr($lifetime); ?>" min="300" step="300">
+        <p class="description">
+            Doba v sekundách, po ktorú sa majú uchovávať dočasné dáta v cache.
+            Minimálne 300 sekúnd (5 minút).
+        </p>
+        <?php
+    }
+
+    public function zobrazInputDbHost(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $hodnota = $nastavenia['db_backup_host'] ?? DB_HOST;
+        ?>
+        <input type="text" name="cl_nastavenia[db_backup_host]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
+        <p class="description">Adresa servera záložnej databázy (napr. localhost alebo IP adresa)</p>
+        <?php
+    }
+
+    public function zobrazInputDbName(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $hodnota = $nastavenia['db_backup_name'] ?? DB_NAME . '_backup';
+        ?>
+        <input type="text" name="cl_nastavenia[db_backup_name]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
+        <p class="description">Názov záložnej databázy</p>
+        <?php
+    }
+
+    public function zobrazInputDbUser(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $hodnota = $nastavenia['db_backup_user'] ?? DB_USER;
+        ?>
+        <input type="text" name="cl_nastavenia[db_backup_user]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
+        <p class="description">Používateľské meno pre prístup k záložnej databáze</p>
+        <?php
+    }
+
+    public function zobrazInputDbPass(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $hodnota = $nastavenia['db_backup_pass'] ?? '';
+        ?>
+        <input type="password" name="cl_nastavenia[db_backup_pass]" value="<?php echo esc_attr($hodnota); ?>" class="regular-text">
+        <p class="description">Heslo pre prístup k záložnej databáze</p>
+        <?php
+    }
+
+    public function zobrazInputDbSyncInterval(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $interval = $nastavenia['db_sync_interval'] ?? '300';
+        ?>
+        <select name="cl_nastavenia[db_sync_interval]">
+            <option value="60" <?php selected($interval, '60'); ?>>Každú minútu</option>
+            <option value="300" <?php selected($interval, '300'); ?>>Každých 5 minút</option>
+            <option value="900" <?php selected($interval, '900'); ?>>Každých 15 minút</option>
+            <option value="1800" <?php selected($interval, '1800'); ?>>Každých 30 minút</option>
+            <option value="3600" <?php selected($interval, '3600'); ?>>Každú hodinu</option>
+        </select>
+        <p class="description">Ako často sa má kontrolovať synchronizácia databáz</p>
         <?php
     }
 }
