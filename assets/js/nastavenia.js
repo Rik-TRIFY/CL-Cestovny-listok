@@ -339,6 +339,108 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Aktualizácia CSS premenných pri zmene farieb
+    function aktualizujPosFarby() {
+        const root = document.documentElement;
+        
+        // Získame hodnoty z color inputov
+        const bgColor = document.querySelector('input[name="cl_nastavenia[pos_bg_color]"]')?.value || '#f0f0f0';
+        const buttonColor = document.querySelector('input[name="cl_nastavenia[pos_button_color]"]')?.value || '#ffffff';
+        const textColor = document.querySelector('input[name="cl_nastavenia[pos_text_color]"]')?.value || '#000000';
+        const cartColor = document.querySelector('input[name="cl_nastavenia[pos_cart_color]"]')?.value || '#2271b1';
+    
+        // Nastavíme CSS premenné
+        root.style.setProperty('--pos-bg-color', bgColor);
+        root.style.setProperty('--pos-button-color', buttonColor);
+        root.style.setProperty('--pos-text-color', textColor);
+        root.style.setProperty('--pos-cart-color', cartColor);
+    
+        console.log('Aktualizujem farby:', {bgColor, buttonColor, textColor, cartColor});
+    }
+    
+    // Pridáme event listeners na color inputy
+    document.querySelectorAll('input[type="color"]').forEach(input => {
+        input.addEventListener('input', aktualizujPosFarby);
+        input.addEventListener('change', aktualizujPosFarby);
+    });
+    
+    // Spustíme prvú aktualizáciu farieb pri načítaní stránky
+    document.addEventListener('DOMContentLoaded', aktualizujPosFarby);
+
+    // Pridáme funkciu pre náhľad POS terminálu
+    function aktualizujPosNahlad() {
+        const content = tinymce.get('sablona-pos').getContent();
+        const preview = document.getElementById('cl-pos-preview');
+        
+        if (!preview) return;
+    
+        // Nahradíme premenné testovacími dátami
+        let html = content
+            .replace('{pos_header}', `
+                <div class="pos-header">
+                    <div class="pos-logo">Predaj lístkov</div>
+                    <div class="pos-user">
+                        <div class="pos-user-avatar">JD</div>
+                        <span>John Doe</span>
+                    </div>
+                </div>
+            `)
+            .replace('{pos_grid}', `
+                <div class="pos-grid">
+                    <div class="pos-product">
+                        <div class="pos-product-name">Základný lístok</div>
+                        <div class="pos-product-price">1.20 €</div>
+                    </div>
+                    <div class="pos-product">
+                        <div class="pos-product-name">Zľavnený lístok</div>
+                        <div class="pos-product-price">0.60 €</div>
+                    </div>
+                </div>
+            `)
+            .replace('{pos_cart}', `
+                <div class="pos-cart">
+                    <div class="pos-cart-header">
+                        <h2>Košík</h2>
+                    </div>
+                    <div class="pos-cart-items">
+                        <div class="pos-cart-item">
+                            <div class="pos-item-info">
+                                <div class="pos-item-name">Základný lístok</div>
+                                <div class="pos-item-price">1.20 €</div>
+                            </div>
+                            <div class="pos-item-controls">
+                                <button class="pos-qty-btn">-</button>
+                                <span class="pos-item-qty">2</span>
+                                <button class="pos-qty-btn">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `)
+            .replace('{pos_footer}', `
+                <div class="pos-cart-footer">
+                    <div class="pos-total">
+                        <span>Spolu:</span>
+                        <span class="pos-total-amount">2.40 €</span>
+                    </div>
+                    <button class="pos-checkout">Dokončiť a tlačiť</button>
+                </div>
+            `);
+    
+        preview.innerHTML = html;
+    }
+    
+    // Pridáme event listenery pre POS náhľad
+    document.getElementById('pos-preview-refresh')?.addEventListener('click', aktualizujPosNahlad);
+    
+    if (tinymce.get('sablona-pos')) {
+        tinymce.get('sablona-pos').on('change', function() {
+            if (document.getElementById('pos-preview-auto-refresh').checked) {
+                aktualizujPosNahlad();
+            }
+        });
+    }
+
     // Inicializácia náhľadu
     aktualizujNahlad();
     

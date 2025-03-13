@@ -24,6 +24,18 @@ class Terminal {
         add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'pridajDoKosika']);
         add_action('wp_ajax_cl_odstran_z_kosika', [$this, 'odstranZKosika']);
         add_action('wp_ajax_cl_dokonci_predaj', [$this, 'dokonciPredaj']);
+        add_action('wp_enqueue_scripts', [$this, 'pridajAssets']);
+        add_action('wp_ajax_cl_dokoncit_predaj', [$this, 'dokoncitPredaj']);
+    }
+
+    public function pridajAssets(): void {
+        wp_enqueue_style('cl-pos', CL_ASSETS_URL . 'css/pos.css', [], CL_VERSION);
+        wp_enqueue_script('cl-pos', CL_ASSETS_URL . 'js/pos.js', ['jquery'], CL_VERSION, true);
+        
+        wp_localize_script('cl-pos', 'cl_pos', [
+            'nonce' => wp_create_nonce('cl_pos_nonce'),
+            'ajaxurl' => admin_url('admin-ajax.php')
+        ]);
     }
 
     public function zobrazTerminal(): void {
@@ -229,5 +241,31 @@ class Terminal {
             $wpdb->query('ROLLBACK');
             wp_send_json_error($e->getMessage());
         }
+    }
+
+    public function dokoncitPredaj(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Nie ste prihlásený');
+            return;
+        }
+
+        $items = json_decode(stripslashes($_POST['items']), true);
+        if (empty($items)) {
+            wp_send_json_error('Prázdny košík');
+            return;
+        }
+
+        // TODO: Logika pre uloženie predaja do DB
+        
+        wp_send_json_success([
+            'html' => $this->generujHTML($items)
+        ]);
+    }
+
+    private function generujHTML(array $items): string {
+        // TODO: Generovanie HTML pre tlač
+        return '<h1>Test tlače</h1>';
     }
 }

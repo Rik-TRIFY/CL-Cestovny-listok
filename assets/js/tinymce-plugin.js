@@ -51,6 +51,39 @@
                 ]
             });
 
+            // Pridáme tlačidlo pre POS premenné
+            editor.addButton('cl_pos_variables', {
+                type: 'menubutton',
+                text: 'POS Premenné',
+                icon: false,
+                menu: [
+                    {
+                        text: 'Hlavička',
+                        onclick: function() {
+                            editor.insertContent('{pos_header}');
+                        }
+                    },
+                    {
+                        text: 'Grid lístkov',
+                        onclick: function() {
+                            editor.insertContent('{pos_grid}');
+                        }
+                    },
+                    {
+                        text: 'Košík',
+                        onclick: function() {
+                            editor.insertContent('{pos_cart}');
+                        }
+                    },
+                    {
+                        text: 'Pätička',
+                        onclick: function() {
+                            editor.insertContent('{pos_footer}');
+                        }
+                    }
+                ]
+            });
+
             // Aktualizujeme náhľad pri zmene obsahu
             editor.on('Change', function(e) {
                 if (document.getElementById('preview-auto-refresh').checked) {

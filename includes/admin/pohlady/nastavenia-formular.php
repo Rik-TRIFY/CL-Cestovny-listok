@@ -150,64 +150,82 @@ $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
                     <div class="cl-grid-container">
                         <div class="cl-grid-left">
                             <div class="cl-editor-box">
-                                <h3>Nastavenia POS terminálu</h3>
+                                <h3>HTML šablóna POS terminálu</h3>
+                                <?php
+                                wp_editor(
+                                    $spravca->nacitaj('pos_sablona'),
+                                    'sablona-pos',
+                                    [
+                                        'media_buttons' => true,
+                                        'textarea_name' => 'cl_nastavenia[pos_sablona]',
+                                        'textarea_rows' => 20,
+                                        'teeny' => false,
+                                        'wpautop' => false,
+                                        'tinymce' => [
+                                            'verify_html' => false,
+                                            'cleanup' => false,
+                                            'forced_root_block' => false,
+                                            'valid_styles' => '*[*]',
+                                            'extended_valid_elements' => '*[*]',
+                                            'remove_linebreaks' => false,
+                                            'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_adv,cl_pos_variables',
+                                            'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
+                                            'content_css' => CL_ASSETS_URL . 'css/pos-editor-style.css'
+                                        ]
+                                    ]
+                                );
+                                ?>
+                                <p class="description">
+                                    Dostupné premenné:<br>
+                                    {pos_header} - hlavička s logom a menom predajcu<br>
+                                    {pos_grid} - grid tlačidiel s lístkami<br>
+                                    {pos_cart} - košík s položkami<br>
+                                    {pos_footer} - pätička s tlačidlom pre dokončenie
+                                </p>
+                            </div>
+
+                            <!-- Základné nastavenia -->
+                            <div class="cl-editor-box">
+                                <h3>Nastavenia vzhľadu</h3>
                                 <table class="form-table">
                                     <tr>
-                                        <th>Rozloženie:</th>
+                                        <th>Farba pozadia:</th>
                                         <td>
-                                            <select name="cl_nastavenia[pos_layout]">
-                                                <option value="grid" <?php selected($spravca->nacitaj('pos_layout'), 'grid'); ?>>Mriežka</option>
-                                                <option value="list" <?php selected($spravca->nacitaj('pos_layout'), 'list'); ?>>Zoznam</option>
-                                                <option value="compact" <?php selected($spravca->nacitaj('pos_layout'), 'compact'); ?>>Kompaktný</option>
-                                            </select>
+                                            <input type="color" name="cl_nastavenia[pos_bg_color]" 
+                                                   value="<?php echo esc_attr($spravca->nacitaj('pos_bg_color', '#f0f0f0')); ?>">
                                         </td>
                                     </tr>
                                     <tr>
-                                        <th>Počet stĺpcov:</th>
+                                        <th>Farba tlačidiel:</th>
                                         <td>
-                                            <input type="number" name="cl_nastavenia[pos_columns]" value="<?php echo esc_attr($spravca->nacitaj('pos_columns', '4')); ?>" min="2" max="6">
+                                            <input type="color" name="cl_nastavenia[pos_button_color]" 
+                                                   value="<?php echo esc_attr($spravca->nacitaj('pos_button_color', '#ffffff')); ?>">
                                         </td>
                                     </tr>
                                     <tr>
-                                        <th>Veľkosť tlačidiel:</th>
+                                        <th>Farba textu:</th>
                                         <td>
-                                            <select name="cl_nastavenia[pos_button_size]">
-                                                <option value="small" <?php selected($spravca->nacitaj('pos_button_size'), 'small'); ?>>Malé</option>
-                                                <option value="medium" <?php selected($spravca->nacitaj('pos_button_size'), 'medium'); ?>>Stredné</option> 
-                                                <option value="large" <?php selected($spravca->nacitaj('pos_button_size'), 'large'); ?>>Veľké</option>
-                                            </select>
+                                            <input type="color" name="cl_nastavenia[pos_text_color]" 
+                                                   value="<?php echo esc_attr($spravca->nacitaj('pos_text_color', '#000000')); ?>">
                                         </td>
                                     </tr>
                                 </table>
                             </div>
-                            <?php do_settings_sections('cl_sekcia_pos'); ?>
                         </div>
 
                         <!-- Náhľad -->
                         <div class="cl-grid-right">
                             <div class="cl-preview-box">
                                 <h3>Náhľad POS terminálu</h3>
-                                <div class="cl-device-selector">
-                                    <select id="cl-device-select">
-                                        <option value="custom">Vlastné rozlíšenie</option>
-                                        <option value="iphone-se">iPhone SE (375x667)</option>
-                                        <option value="iphone-xr">iPhone XR/11 (414x896)</option>
-                                        <option value="pixel-5">Pixel 5 (393x851)</option>
-                                        <option value="samsung-s20">Samsung S20 (360x800)</option>
-                                        <option value="samsung-s8">Samsung S8+ (360x740)</option>
-                                    </select>
-                                    <div id="cl-custom-resolution">
-                                        <input type="number" id="cl-width" placeholder="Šírka" value="<?php echo esc_attr($spravca->nacitaj('pos_width', '375')); ?>" min="280" max="1920">
-                                        <span>×</span>
-                                        <input type="number" id="cl-height" placeholder="Výška" value="<?php echo esc_attr($spravca->nacitaj('pos_height', '667')); ?>" min="400" max="1920">
-                                        <input type="hidden" name="cl_nastavenia[pos_width]" id="pos_width" value="<?php echo esc_attr($spravca->nacitaj('pos_width', '375')); ?>">
-                                        <input type="hidden" name="cl_nastavenia[pos_height]" id="pos_height" value="<?php echo esc_attr($spravca->nacitaj('pos_height', '667')); ?>">
-                                    </div>
+                                <div id="cl-pos-preview">
+                                    <!-- Tu sa zobrazí náhľad -->
                                 </div>
-                                <div id="cl-device-frame">
-                                    <div id="cl-pos-preview">
-                                        <?php echo do_shortcode('[pos_terminal preview="true"]'); ?>
-                                    </div>
+                                <div class="cl-preview-tools">
+                                    <button type="button" class="button" id="pos-preview-refresh">Obnoviť náhľad</button>
+                                    <label>
+                                        <input type="checkbox" id="pos-preview-auto-refresh" checked> 
+                                        Automatický náhľad
+                                    </label>
                                 </div>
                             </div>
                         </div>
