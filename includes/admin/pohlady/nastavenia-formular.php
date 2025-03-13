@@ -32,6 +32,10 @@ if (!defined('ABSPATH')) exit;
                class="nav-tab <?php echo $active_tab === 'system' ? 'nav-tab-active' : ''; ?>">
                 Systémové nastavenia
             </a>
+            <a href="?page=cl-nastavenia&tab=pos" 
+               class="nav-tab <?php echo $active_tab === 'pos' ? 'nav-tab-active' : ''; ?>">
+                POS Terminál
+            </a>
         </nav>
 
         <div class="tab-content">
@@ -135,6 +139,37 @@ if (!defined('ABSPATH')) exit;
                 
                 case 'system':
                     do_settings_sections('cl_sekcia_system');
+                    break;
+
+                case 'pos':
+                    ?>
+                    <div class="cl-grid-container">
+                        <!-- POS Nastavenia -->
+                        <div class="cl-grid-left">
+                            <div class="cl-editor-box">
+                                <h3>Nastavenia POS terminálu</h3>
+                                <?php do_settings_sections('cl_sekcia_pos'); ?>
+                            </div>
+                            <div class="cl-editor-box">
+                                <h3>Štýlovanie tlačidiel</h3>
+                                <?php do_settings_sections('cl_sekcia_pos_style'); ?>
+                            </div>
+                        </div>
+                        
+                        <!-- Náhľad -->
+                        <div class="cl-grid-right">
+                            <div class="cl-preview-box">
+                                <h3>Live náhľad POS terminálu</h3>
+                                <div id="cl-pos-preview" class="cl-preview-window">
+                                    <?php echo do_shortcode('[pos_terminal preview="true"]'); ?>
+                                </div>
+                                <div class="cl-preview-tools">
+                                    <button type="button" class="button" id="pos-preview-refresh">Obnoviť náhľad</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
                     break;
             }
             ?>

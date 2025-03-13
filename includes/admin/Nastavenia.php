@@ -105,6 +105,18 @@ class Nastavenia {
             'max_pokusov' => ['Max. počet pokusov', 'zobrazInputMaxPokusov']
         ];
 
+        // POS Nastavenia
+        $nastavenia_pos = [
+            'pos_layout' => ['Rozloženie tlačidiel', 'zobrazInputPosLayout'],
+            'pos_columns' => ['Počet stĺpcov', 'zobrazInputPosColumns'],
+            'pos_button_size' => ['Veľkosť tlačidiel', 'zobrazInputPosButtonSize'],
+            'pos_button_style' => ['Štýl tlačidiel', 'zobrazInputPosButtonStyle'],
+            'pos_colors' => ['Farebná schéma', 'zobrazInputPosColors'],
+            'pos_font_size' => ['Veľkosť písma', 'zobrazInputPosFontSize'],
+            'pos_show_history' => ['Zobraziť históriu', 'zobrazInputPosShowHistory'],
+            'pos_history_count' => ['Počet záznamov v histórii', 'zobrazInputPosHistoryCount']
+        ];
+
         // Registrácia sekcií a polí
         $sekcie = [
             'listok' => [$nastavenia_listka, 'Nastavenia vzhľadu a obsahu lístka'],
@@ -130,6 +142,24 @@ class Nastavenia {
                     "cl_sekcia_$id"
                 );
             }
+        }
+
+        // Registrácia sekcií POS
+        add_settings_section(
+            'cl_sekcia_pos',
+            'Nastavenia POS terminálu',
+            [$this, 'zobrazSekciuPos'],
+            'cl-nastavenia'
+        );
+
+        foreach ($nastavenia_pos as $id => $config) {
+            add_settings_field(
+                "cl_$id",
+                $config[0],
+                [$this, $config[1]],
+                'cl-nastavenia',
+                'cl_sekcia_pos'
+            );
         }
     }
 
@@ -243,6 +273,10 @@ class Nastavenia {
 
     public function zobrazSekciuDatabazy(): void {
         echo '<p>Nastavenia záložnej databázy a synchronizácie. Pri zmene nastavení sa automaticky otestuje pripojenie.</p>';
+    }
+
+    public function zobrazSekciuPos(): void {
+        echo '<p>Nastavenia vzhľadu a funkcionality POS terminálu.</p>';
     }
 
     // Callback metódy pre polia
@@ -553,6 +587,41 @@ class Nastavenia {
             Povoliť automatickú synchronizáciu databáz
         </label>
         <p class="description">Pri povolení sa databázy budú automaticky synchronizovať podľa nastaveného intervalu.</p>
+        <?php
+    }
+
+    public function zobrazInputPosLayout(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $layout = $nastavenia['pos_layout'] ?? 'grid';
+        ?>
+        <select name="cl_nastavenia[pos_layout]" id="pos_layout">
+            <option value="grid" <?php selected($layout, 'grid'); ?>>Mriežka</option>
+            <option value="list" <?php selected($layout, 'list'); ?>>Zoznam</option>
+            <option value="compact" <?php selected($layout, 'compact'); ?>>Kompaktný</option>
+        </select>
+        <p class="description">Rozloženie tlačidiel v POS termináli</p>
+        <?php
+    }
+
+    public function zobrazInputPosColumns(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $columns = $nastavenia['pos_columns'] ?? 4;
+        ?>
+        <input type="number" name="cl_nastavenia[pos_columns]" value="<?php echo esc_attr($columns); ?>" min="2" max="6" step="1">
+        <p class="description">Počet stĺpcov v mriežke (2-6)</p>
+        <?php
+    }
+
+    public function zobrazInputPosButtonSize(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $size = $nastavenia['pos_button_size'] ?? 'medium';
+        ?>
+        <select name="cl_nastavenia[pos_button_size]">
+            <option value="small" <?php selected($size, 'small'); ?>>Malé</option>
+            <option value="medium" <?php selected($size, 'medium'); ?>>Stredné</option>
+            <option value="large" <?php selected($size, 'large'); ?>>Veľké</option>
+        </select>
+        <p class="description">Veľkosť tlačidiel v POS termináli</p>
         <?php
     }
 

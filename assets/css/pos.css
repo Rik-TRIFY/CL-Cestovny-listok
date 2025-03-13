@@ -73,3 +73,67 @@
     height: 50px;
     margin-top: 10px;
 }
+
+.cl-terminal-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.cl-terminal-header {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cl-listky {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.cl-listok {
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cl-listok:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.cl-listok .nazov {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.cl-listok .cena {
+    display: block;
+    color: #0073aa;
+}
+
+/* Layouts */
+.cl-terminal.list .cl-listky {
+    grid-template-columns: 1fr !important;
+}
+
+.cl-terminal.compact .cl-listky {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+}
+
+/* Button sizes */
+.pos-button-size-small .cl-listok {
+    padding: 10px;
+    font-size: 14px;
+}
+
+.pos-button-size-large .cl-listok {
+    padding: 20px;
+    font-size: 18px;
+}

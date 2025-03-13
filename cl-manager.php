@@ -368,9 +368,10 @@ class CestovneListky {
         }
 
         // Načítame assets pre terminál
-        wp_enqueue_style('cl-terminal', CL_ASSETS_URL . 'css/terminal.css', [], CL_VERSION);
-        wp_enqueue_script('cl-terminal', CL_ASSETS_URL . 'js/terminal.js', ['jquery'], CL_VERSION, true);
-        wp_localize_script('cl-terminal', 'cl_pos', [
+        wp_enqueue_style('cl-pos', CL_ASSETS_URL . 'css/pos.css', [], CL_VERSION);
+        wp_enqueue_script('cl-pos', CL_ASSETS_URL . 'js/terminal.js', ['jquery'], CL_VERSION, true);
+        
+        wp_localize_script('cl-pos', 'cl_pos', [
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('cl_pos_nonce')
         ]);

@@ -198,6 +198,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 250);
     });
 
+    // POS Preview Updates
+    function aktualizujPosNahlad() {
+        const layout = document.getElementById('pos_layout')?.value || 'grid';
+        const colors = {
+            primary: document.getElementById('pos_color_primary')?.value,
+            secondary: document.getElementById('pos_color_secondary')?.value,
+            background: document.getElementById('pos_color_background')?.value
+        };
+
+        const preview = document.getElementById('cl-pos-preview');
+        if (preview) {
+            preview.className = `cl-preview-window pos-layout-${layout}`;
+            
+            // Apply custom styles
+            const customStyles = document.createElement('style');
+            customStyles.textContent = `
+                #cl-pos-preview .cl-listok {
+                    background-color: ${colors.primary};
+                    color: ${colors.secondary};
+                }
+                #cl-pos-preview .cl-terminal-container {
+                    background-color: ${colors.background};
+                }
+            `;
+            preview.appendChild(customStyles);
+        }
+    }
+
+    // Live preview for POS settings
+    ['pos_layout', 'pos_color_primary', 'pos_color_secondary', 'pos_color_background'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', aktualizujPosNahlad);
+    });
+
+    // Manual refresh for POS preview
+    document.getElementById('pos-preview-refresh')?.addEventListener('click', aktualizujPosNahlad);
+
     // Inicializácia náhľadu
     aktualizujNahlad();
     
