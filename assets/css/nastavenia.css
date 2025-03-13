@@ -182,15 +182,25 @@
 /* Grid Layout pre nastavenia lístka */
 .cl-grid-container {
     display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 30px;
+    grid-template-columns: 2fr 1fr;  /* Zmenené na pomer 2:1 */
+    gap: 20px;
     margin-top: 20px;
+    padding: 0 20px;  /* Pridaný padding pre lepší odstup od okrajov */
+}
+
+.cl-grid-left {
+    min-width: 0;  /* Fixuje pretekanie obsahu */
 }
 
 .cl-grid-right {
+    min-width: 0;  /* Fixuje pretekanie obsahu */
     position: sticky;
     top: 32px;
     align-self: start;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
 }
 
 .cl-preview-box {
@@ -199,6 +209,9 @@
     border: 1px solid #ccd0d4;
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .cl-preview-window {
@@ -226,6 +239,7 @@
 @media screen and (max-width: 1200px) {
     .cl-grid-container {
         grid-template-columns: 1fr;
+        padding: 0 10px;
     }
     
     .cl-grid-right {
@@ -240,4 +254,187 @@
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     margin-bottom: 20px;
+}
+
+/* POS Preview */
+.cl-device-selector {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.cl-device-selector select {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#cl-custom-resolution {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#cl-custom-resolution input {
+    width: 80px;
+}
+
+#cl-device-frame {
+    position: relative;
+    margin: 20px auto;
+    background: #000;
+    border-radius: 20px;
+    padding: 10px;
+    box-shadow: 0 0 0 2px #666;
+    transition: all 0.3s ease;
+    width: 375px;
+    height: 667px;
+    background: #1a1a1a;
+    border-radius: 40px;
+    padding: 15px;
+    box-shadow: 0 0 0 2px #666, 0 5px 15px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+#cl-device-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 25px;
+    background: #1a1a1a;
+    border-radius: 0 0 20px 20px;
+    z-index: 2;
+}
+
+#cl-device-frame::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: #666;
+    border-radius: 4px;
+}
+
+#cl-pos-preview {
+    background: #fff;
+    overflow-y: auto;
+    transform-origin: top left;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 30px;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Responzívnosť pre admin */
+@media screen and (max-width: 1400px) {
+    .cl-grid-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .cl-grid-right {
+        position: static;
+        padding: 10px;
+    }
+
+    #cl-device-frame {
+        transform: scale(0.9);
+        transform-origin: top center;
+    }
+}
+
+/* POS Preview štýly */
+.cl-grid-right {
+    padding: 0;
+}
+
+.cl-preview-box {
+    max-width: 800px;
+    width: 100%;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.cl-preview-box h3 {
+    margin: 0 0 10px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.cl-device-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.cl-device-selector select {
+    width: auto;
+    min-width: 200px;
+}
+
+#cl-custom-resolution {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#cl-custom-resolution input {
+    width: 60px;
+    text-align: center;
+    padding: 4px;
+}
+
+/* Zjednodušený frame zariadenia */
+#cl-device-frame {
+    margin: 0 auto;
+    border: 1px solid #666;
+    border-radius: 4px;
+    overflow: hidden;
+    width: 375px;
+    height: 667px;
+    background: #fff;
+}
+
+/* Odstránenie všetkých pseudo-elementov */
+#cl-device-frame::before,
+#cl-device-frame::after {
+    display: none;
+}
+
+#cl-pos-preview {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    overflow-y: auto;
+}
+
+/* Responzívne prispôsobenie */
+@media screen and (max-width: 1400px) {
+    .cl-grid-right {
+        padding: 10px;
+    }
+}
+
+@media screen and (max-width: 1400px) {
+    #cl-device-frame {
+        transform: scale(0.9);
+        transform-origin: top center;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    #cl-device-frame {
+        transform: scale(0.8);
+    }
 }

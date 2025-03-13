@@ -109,6 +109,8 @@ class Nastavenia {
         $nastavenia_pos = [
             'pos_layout' => ['Rozloženie tlačidiel', 'zobrazInputPosLayout'],
             'pos_columns' => ['Počet stĺpcov', 'zobrazInputPosColumns'],
+            'pos_width' => ['Šírka obrazovky', 'zobrazInputPosWidth'],     // Pridané
+            'pos_height' => ['Výška obrazovky', 'zobrazInputPosHeight'],   // Pridané
             'pos_button_size' => ['Veľkosť tlačidiel', 'zobrazInputPosButtonSize'],
             'pos_button_style' => ['Štýl tlačidiel', 'zobrazInputPosButtonStyle'],
             'pos_colors' => ['Farebná schéma', 'zobrazInputPosColors'],
@@ -163,84 +165,84 @@ class Nastavenia {
         }
     }
 
-    // New sanitize callback
     public function sanitizeNastavenia($input) {
-        if (isset($input['sablona_listka'])) {
-            // Ponecháme HTML presne tak, ako je
-            return $input;
-        }
-        $sanitized = [];
+        $sanitized = get_option('cl_nastavenia', []);
+        $active_tab = $_GET['tab'] ?? 'listok';
         
-        // Zachováme kompletný HTML a CSS v šablóne lístka
-        if (isset($input['sablona_listka'])) {
-            $allowed_html = array(
-                'div'    => array(
-                    'class' => true,
-                    'style' => true,
-                    'id'    => true,
-                    '*'     => true, // Povolí všetky atribúty
-                ),
-                'span'   => array(
-                    'class' => true,
-                    'style' => true,
-                    'id'    => true,
-                    '*'     => true,
-                ),
-                'b'      => array('*' => true),
-                'strong' => array('*' => true),
-                'i'      => array('*' => true),
-                'em'     => array('*' => true),
-                'br'     => array(),
-                'hr'     => array(),
-                'img'    => array(
-                    'src'    => true,
-                    'alt'    => true,
-                    'class'  => true,
-                    'id'     => true,
-                    'style'  => true,
-                    'width'  => true,
-                    'height' => true,
-                    '*'      => true,
-                ),
-                'a'      => array(
-                    'href'   => true,
-                    'class'  => true,
-                    'id'     => true,
-                    'target' => true,
-                    'style'  => true,
-                    '*'      => true,
-                ),
-                '*'      => array('*' => true), // Povolí všetky tagy a ich atribúty
-            );
+        switch ($active_tab) {
+            case 'pos':
+                // Rozlíšenie ukladáme ako čísla
+                if (isset($input['pos_width'])) {
+                    $sanitized['pos_width'] = absint($input['pos_width']);
+                }
+                if (isset($input['pos_height'])) {
+                    $sanitized['pos_height'] = absint($input['pos_height']);
+                }
+                
+                // Ostatné POS nastavenia
+                $pos_fields = ['pos_layout', 'pos_columns', 'pos_button_size'];
+                foreach ($pos_fields as $field) {
+                    if (isset($input[$field])) {
+                        $sanitized[$field] = sanitize_text_field($input[$field]);
+                    }
+                }
+                break;
+            case 'listok':
+                // Spracovanie polí pre lístok
+                $listok_fields = ['sablona_listka', 'logo_url', 'hlavicka', 'paticka', 
+                                'font_velkost', 'logo_velkost', 'pismo', 'zarovnanie', 
+                                'zalamovanie'];
+                foreach ($listok_fields as $field) {
+                    if (isset($input[$field])) {
+                        $sanitized[$field] = $input[$field];
+                    }
+                }
+                break;
 
-            // Použijeme menej reštriktívnu sanitizáciu
-            $content = wp_kses($input['sablona_listka'], $allowed_html);
-            
-            // Zachováme presné formátovanie
-            $content = stripslashes($content);
-            
-            // Opravíme escapovanie v CSS
-            $content = str_replace('&quot;', '"', $content);
-            $content = str_replace('&#039;', "'", $content);
-            
-            // Zachováme všetky CSS vlastnosti
-            $content = preg_replace_callback('/style="([^"]*)"/', function($matches) {
-                return 'style="' . str_replace(array('&quot;', '&#039;'), array('"', "'"), $matches[1]) . '"';
-            }, $content);
-            
-            $sanitized['sablona_listka'] = $content;
-        }
-        
-        // Ostatné polia
-        if (isset($input['logo_url'])) {
-            $sanitized['logo_url'] = esc_url_raw($input['logo_url']);
-        }
-        
-        // Pridáme všetky ostatné nastavenia
-        foreach ($input as $key => $value) {
-            if (!isset($sanitized[$key])) {
-                $sanitized[$key] = sanitize_text_field($value);
-            }
+            case 'pos':
+                // Spracovanie polí pre POS
+                $pos_fields = ['pos_layout', 'pos_columns', 'pos_width', 'pos_height',
+                             'pos_button_size', 'pos_button_style', 'pos_colors',
+                             'pos_font_size', 'pos_show_history', 'pos_history_count'];
+                foreach ($pos_fields as $field) {
+                    if (isset($input[$field])) {
+                        $sanitized[$field] = sanitize_text_field($input[$field]);
+                    }
+                }
+                break;
+
+            case 'predaj':
+                // Spracovanie polí pre predaj
+                $predaj_fields = ['sirka_tlace', 'predvolena_tlaciaren', 'pocet_kopii',
+                                'format_cisla', 'auto_tlac', 'cas_stornovania'];
+                foreach ($predaj_fields as $field) {
+                    if (isset($input[$field])) {
+                        $sanitized[$field] = sanitize_text_field($input[$field]);
+                    }
+                }
+                break;
+
+            case 'databazy':
+                // Spracovanie polí pre databázy
+                $db_fields = ['db_backup_host', 'db_backup_name', 'db_backup_user',
+                            'db_backup_pass', 'db_sync_interval', 'db_auto_sync'];
+                foreach ($db_fields as $field) {
+                    if (isset($input[$field])) {
+                        $sanitized[$field] = sanitize_text_field($input[$field]);
+                    }
+                }
+                break;
+
+            case 'system':
+                // Spracovanie systémových nastavení
+                $system_fields = ['debug_mode', 'log_level', 'cache_lifetime',
+                                'session_timeout', 'max_pokusov'];
+                foreach ($system_fields as $field) {
+                    if (isset($input[$field])) {
+                        $sanitized[$field] = sanitize_text_field($input[$field]);
+                    }
+                }
+                break;
         }
         
         return $sanitized;
@@ -622,6 +624,22 @@ class Nastavenia {
             <option value="large" <?php selected($size, 'large'); ?>>Veľké</option>
         </select>
         <p class="description">Veľkosť tlačidiel v POS termináli</p>
+        <?php
+    }
+
+    public function zobrazInputPosWidth(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $width = $nastavenia['pos_width'] ?? '375';
+        ?>
+        <input type="hidden" name="cl_nastavenia[pos_width]" id="pos_width" value="<?php echo esc_attr($width); ?>">
+        <?php
+    }
+
+    public function zobrazInputPosHeight(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $height = $nastavenia['pos_height'] ?? '667';
+        ?>
+        <input type="hidden" name="cl_nastavenia[pos_height]" id="pos_height" value="<?php echo esc_attr($height); ?>">
         <?php
     }
 

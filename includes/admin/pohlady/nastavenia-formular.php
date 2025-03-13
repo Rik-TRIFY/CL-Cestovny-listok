@@ -159,12 +159,26 @@ if (!defined('ABSPATH')) exit;
                         <!-- Náhľad -->
                         <div class="cl-grid-right">
                             <div class="cl-preview-box">
-                                <h3>Live náhľad POS terminálu</h3>
-                                <div id="cl-pos-preview" class="cl-preview-window">
-                                    <?php echo do_shortcode('[pos_terminal preview="true"]'); ?>
+                                <h3>Náhľad POS terminálu</h3>
+                                <div class="cl-device-selector">
+                                    <select id="cl-device-select">
+                                        <option value="custom">Vlastné rozlíšenie</option>
+                                        <option value="iphone-se">iPhone SE (375x667)</option>
+                                        <option value="iphone-xr">iPhone XR/11 (414x896)</option>
+                                        <option value="pixel-5">Pixel 5 (393x851)</option>
+                                        <option value="samsung-s20">Samsung S20 (360x800)</option>
+                                        <option value="samsung-s8">Samsung S8+ (360x740)</option>
+                                    </select>
+                                    <div id="cl-custom-resolution">
+                                        <input type="number" id="cl-width" placeholder="Šírka" value="375" min="280" max="1920">
+                                        <span>×</span>
+                                        <input type="number" id="cl-height" placeholder="Výška" value="667" min="400" max="1920">
+                                    </div>
                                 </div>
-                                <div class="cl-preview-tools">
-                                    <button type="button" class="button" id="pos-preview-refresh">Obnoviť náhľad</button>
+                                <div id="cl-device-frame">
+                                    <div id="cl-pos-preview">
+                                        <?php echo do_shortcode('[pos_terminal preview="true"]'); ?>
+                                    </div>
                                 </div>
                             </div>
                         </div>

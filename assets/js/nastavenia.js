@@ -234,6 +234,106 @@ document.addEventListener('DOMContentLoaded', function() {
     // Manual refresh for POS preview
     document.getElementById('pos-preview-refresh')?.addEventListener('click', aktualizujPosNahlad);
 
+    // Device Preview Selector
+    const deviceSelect = document.getElementById('cl-device-select');
+    const customResolution = document.getElementById('cl-custom-resolution');
+    const deviceFrame = document.getElementById('cl-device-frame');
+    const posPreview = document.getElementById('cl-pos-preview');
+    const widthInput = document.getElementById('cl-width');
+    const heightInput = document.getElementById('cl-height');
+
+    const deviceSizes = {
+        'custom': null,
+        'iphone-se': { width: 375, height: 667 },
+        'iphone-xr': { width: 414, height: 896 },
+        'pixel-5': { width: 393, height: 851 },
+        'samsung-s20': { width: 360, height: 800 },
+        'samsung-s8': { width: 360, height: 740 }
+    };
+
+    function updatePreviewSize(width, height) {
+        deviceFrame.style.width = width + 'px';
+        deviceFrame.style.height = height + 'px';
+        posPreview.style.width = width + 'px';
+        posPreview.style.height = height + 'px';
+    }
+
+    deviceSelect?.addEventListener('change', function() {
+        const selected = this.value;
+        customResolution.style.display = selected === 'custom' ? 'flex' : 'none';
+        
+        if (selected !== 'custom') {
+            const size = deviceSizes[selected];
+            updatePreviewSize(size.width, size.height);
+            widthInput.value = size.width;
+            heightInput.value = size.height;
+        }
+    });
+
+    [widthInput, heightInput].forEach(input => {
+        input?.addEventListener('change', function() {
+            updatePreviewSize(widthInput.value, heightInput.value);
+        });
+    });
+
+    // Aktualizácia hidden inputov pri zmene rozlíšenia
+    [widthInput, heightInput].forEach(input => {
+        input?.addEventListener('change', function() {
+            const posWidth = document.getElementById('pos_width');
+            const posHeight = document.getElementById('pos_height');
+            
+            if (posWidth && posHeight) {
+                posWidth.value = widthInput.value;
+                posHeight.value = heightInput.value;
+            }
+            
+            updatePreviewSize(widthInput.value, heightInput.value);
+        });
+    });
+
+    // Aktualizácia rozlíšenia
+    [widthInput, heightInput].forEach(input => {
+        input?.addEventListener('input', function() {
+            const posWidth = document.getElementById('pos_width');
+            const posHeight = document.getElementById('pos_height');
+            
+            if (posWidth && posHeight) {
+                // Aktualizujeme hidden inputy
+                posWidth.value = widthInput.value;
+                posHeight.value = heightInput.value;
+            }
+            
+            // Aktualizujeme náhľad
+            updatePreviewSize(widthInput.value, heightInput.value);
+        });
+    });
+
+    // Načítanie uložených hodnôt pri načítaní stránky
+    const savedWidth = document.getElementById('pos_width')?.value || '375';
+    const savedHeight = document.getElementById('pos_height')?.value || '667';
+    
+    if (widthInput && heightInput) {
+        widthInput.value = savedWidth;
+        heightInput.value = savedHeight;
+        updatePreviewSize(savedWidth, savedHeight);
+        if (deviceSelect) {
+            deviceSelect.value = 'custom';
+            customResolution.style.display = 'flex';
+        }
+    }
+
+    // Načítanie uložených hodnôt pri inicializácii
+    const savedWidth = document.getElementById('pos_width')?.value;
+    const savedHeight = document.getElementById('pos_height')?.value;
+    
+    if (savedWidth && savedHeight) {
+        widthInput.value = savedWidth;
+        heightInput.value = savedHeight;
+        updatePreviewSize(savedWidth, savedHeight);
+        deviceSelect.value = 'custom';
+        customResolution.style.display = 'flex';
+    }
+
     // Inicializácia náhľadu
     aktualizujNahlad();
     
