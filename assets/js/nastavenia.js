@@ -25,22 +25,76 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById(id)?.addEventListener('input', aktualizujNahlad);
     });
     
+    // Editor lístka
+    const editor = document.getElementById('sablona-listka');
+    const preview = document.getElementById('cl-listok-preview');
+    const autoRefresh = document.getElementById('preview-auto-refresh');
+
+    // Toolbar tlačidlá
+    document.querySelectorAll('.cl-editor-toolbar button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tag = this.dataset.tag;
+            const variable = this.dataset.var;
+            
+            if (editor.selectionStart || editor.selectionStart === 0) {
+                const startPos = editor.selectionStart;
+                const endPos = editor.selectionEnd;
+                const selected = editor.value.substring(startPos, endPos);
+                
+                if (tag) {
+                    const replacement = `<${tag}>${selected}</${tag}>`;
+                    editor.value = editor.value.substring(0, startPos) + replacement + editor.value.substring(endPos);
+                } else if (variable) {
+                    editor.value = editor.value.substring(0, startPos) + variable + editor.value.substring(endPos);
+                }
+                
+                aktualizujNahlad();
+            }
+        });
+    });
+
     function aktualizujNahlad() {
-        const preview = document.getElementById('cl-listok-preview');
-        const logo = document.getElementById('cl_logo_url').value;
-        const hlavicka = document.getElementById('cl_hlavicka').value;
-        const paticka = document.getElementById('cl_paticka').value;
+        let html = editor.value;
         
-        let html = '';
-        if (logo) {
-            html += `<img src="${logo}" style="max-width:100%;height:auto;display:block;margin:0 auto;">`;
-        }
+        // Nahradenie premenných testovacími dátami
+        const testData = {
+            logo: '<img src="/test-logo.png" style="max-width:100%">',
+            datum: '01.03.2024',
+            cas: '14:30',
+            cislo_listka: '20240301-0001',
+            predajca: 'Test Predajca',
+            polozky: `
+                <div class="polozka">
+                    <div>Cestovný lístok základný</div>
+                    <div>2x 1.20€ = 2.40€</div>
+                </div>
+                <div class="polozka">
+                    <div>Cestovný lístok zľavnený</div>
+                    <div>1x 0.60€ = 0.60€</div>
+                </div>
+            `,
+            suma: '3.00€'
+        };
         
-        html += `<div style="margin:10px 0;font-size:12px;">${hlavicka}</div>`;
-        html += `<div style="margin-top:20px;font-size:12px;border-top:1px solid #ddd;padding-top:10px;">${paticka}</div>`;
+        Object.entries(testData).forEach(([key, value]) => {
+            html = html.replace(new RegExp(`{${key}}`, 'g'), value);
+        });
         
         preview.innerHTML = html;
     }
+
+    // Automatický náhľad pri písaní
+    editor?.addEventListener('input', () => {
+        if (autoRefresh.checked) {
+            aktualizujNahlad();
+        }
+    });
+
+    // Manuálne obnovenie náhľadu
+    document.getElementById('preview-refresh')?.addEventListener('click', aktualizujNahlad);
+
+    // Inicializácia náhľadu
+    aktualizujNahlad();
     
     // Spustiť náhľad pri načítaní
     aktualizujNahlad();

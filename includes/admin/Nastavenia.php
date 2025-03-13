@@ -16,207 +16,95 @@ class Nastavenia {
     }
 
     public function registrujNastavenia(): void {
-        register_setting('cl_nastavenia', 'cl_nastavenia');
+        register_setting('cl_nastavenia', 'cl_nastavenia', [
+            'sanitize_callback' => [$this, 'sanitizeNastavenia']
+        ]);
         
-        // Vzhľad lístka
-        add_settings_section(
-            'cl_sekcia_listok',
-            'Nastavenia vzhľadu lístka',
-            [$this, 'zobrazSekciuListok'],
-            'cl-nastavenia'
-        );
+        // 1. Nastavenia lístka
+        add_settings_section('cl_sekcia_listok', 'Nastavenia vzhľadu lístka', [$this, 'zobrazSekciuListok'], 'cl-nastavenia');
         
-        add_settings_field(
-            'cl_logo',
-            'Logo na lístku',
-            [$this, 'zobrazInputLogo'],
-            'cl-nastavenia',
-            'cl_sekcia_listok'
-        );
+        $nastavenia_listka = [
+            'logo' => ['Logo lístka', 'zobrazInputLogo'],
+            'hlavicka' => ['Hlavička lístka', 'zobrazInputHlavicka'],
+            'paticka' => ['Pätička lístka', 'zobrazInputPaticka'],
+            'font_velkost' => ['Veľkosť písma', 'zobrazInputFontVelkost'],
+            'logo_velkost' => ['Veľkosť loga', 'zobrazInputLogoVelkost'],
+            'pismo' => ['Typ písma', 'zobrazInputPismo'],
+            'zarovnanie' => ['Zarovnanie textu', 'zobrazInputZarovnanie'],
+            'zalamovanie' => ['Zalamovanie textu', 'zobrazInputZalamovanie']
+        ];
 
-        add_settings_field(
-            'cl_hlavicka',
-            'Hlavička lístka',
-            [$this, 'zobrazInputHlavicka'],
-            'cl-nastavenia',
-            'cl_sekcia_listok'
-        );
+        // 2. Nastavenia predaja
+        $nastavenia_predaja = [
+            'sirka_tlace' => ['Šírka tlačiarne', 'zobrazInputSirkaTlace'],
+            'predvolena_tlaciaren' => ['Predvolená tlačiareň', 'zobrazInputPredvolenaTlaciaren'],
+            'pocet_kopii' => ['Počet kópií', 'zobrazInputPocetKopii'],
+            'format_cisla' => ['Formát čísla lístka', 'zobrazInputFormatCisla'],
+            'auto_tlac' => ['Automatická tlač', 'zobrazInputAutoTlac'],
+            'cas_stornovania' => ['Časový limit na stornovanie', 'zobrazInputCasStornovania'],
+            'zobrazit_historiu' => ['Zobraziť históriu predaja', 'zobrazInputZobrazitHistoriu'],
+            'pocet_v_historii' => ['Počet lístkov v histórii', 'zobrazInputPocetVHistorii']
+        ];
 
-        add_settings_field(
-            'cl_paticka',
-            'Pätička lístka',
-            [$this, 'zobrazInputPaticka'],
-            'cl-nastavenia',
-            'cl_sekcia_listok'
-        );
+        // 3. Nastavenia databáz
+        $nastavenia_databaz = [
+            'db_backup_host' => ['Adresa záložnej DB', 'zobrazInputDbHost'],
+            'db_backup_name' => ['Názov záložnej DB', 'zobrazInputDbName'],
+            'db_backup_user' => ['Používateľ záložnej DB', 'zobrazInputDbUser'],
+            'db_backup_pass' => ['Heslo záložnej DB', 'zobrazInputDbPass'],
+            'db_sync_interval' => ['Interval synchronizácie', 'zobrazInputDbSyncInterval'],
+            'db_auto_sync' => ['Automatická synchronizácia', 'zobrazInputDbAutoSync']
+        ];
 
-        // Nastavenia predaja
-        add_settings_section(
-            'cl_sekcia_predaj',
-            'Nastavenia predaja',
-            [$this, 'zobrazSekciuPredaj'],
-            'cl-nastavenia'
-        );
+        // 4. Systémové nastavenia
+        $nastavenia_system = [
+            'debug_mode' => ['Debug mód', 'zobrazInputDebugMode'],
+            'log_level' => ['Úroveň logovania', 'zobrazInputLogLevel'],
+            'cache_lifetime' => ['Životnosť cache', 'zobrazInputCacheLifetime'],
+            'session_timeout' => ['Timeout sedenia', 'zobrazInputSessionTimeout'],
+            'max_pokusov' => ['Max. počet pokusov', 'zobrazInputMaxPokusov']
+        ];
 
-        add_settings_field(
-            'cl_format_cisla',
-            'Formát čísla lístka',
-            [$this, 'zobrazInputFormatCisla'],
-            'cl-nastavenia',
-            'cl_sekcia_predaj'
-        );
+        // Registrácia sekcií a polí
+        $sekcie = [
+            'listok' => [$nastavenia_listka, 'Nastavenia vzhľadu a obsahu lístka'],
+            'predaj' => [$nastavenia_predaja, 'Nastavenia predaja a tlače'],
+            'databazy' => [$nastavenia_databaz, 'Nastavenia záložnej databázy'],
+            'system' => [$nastavenia_system, 'Systémové nastavenia']
+        ];
 
-        add_settings_field(
-            'cl_auto_tlac',
-            'Automatická tlač',
-            [$this, 'zobrazInputAutoTlac'],
-            'cl-nastavenia',
-            'cl_sekcia_predaj'
-        );
+        foreach ($sekcie as $id => $config) {
+            add_settings_section(
+                "cl_sekcia_$id",
+                $config[1],
+                [$this, "zobrazSekciu$id"],
+                'cl-nastavenia'
+            );
 
-        add_settings_field(
-            'cl_sirka_tlace',
-            'Šírka tlačiarne',
-            [$this, 'zobrazInputSirkaTlace'],
-            'cl-nastavenia',
-            'cl_sekcia_predaj'
-        );
+            foreach ($config[0] as $pole_id => $pole_config) {
+                add_settings_field(
+                    "cl_$pole_id",
+                    $pole_config[0],
+                    [$this, $pole_config[1]],
+                    'cl-nastavenia',
+                    "cl_sekcia_$id"
+                );
+            }
+        }
+    }
 
-        // Nastavenia štatistík
-        add_settings_section(
-            'cl_sekcia_statistiky',
-            'Nastavenia štatistík',
-            [$this, 'zobrazSekciuStatistiky'],
-            'cl-nastavenia'
-        );
+    // New sanitize callback
+    public function sanitizeNastavenia($input) {
+        $sanitized = [];
         
-        add_settings_field(
-            'cl_statistiky_cas',
-            'Čas aktualizácie štatistík',
-            [$this, 'zobrazInputStatistikyCas'],
-            'cl-nastavenia',
-            'cl_sekcia_statistiky'
-        );
+        // Sanitize each input field
+        if (isset($input['logo_url'])) {
+            $sanitized['logo_url'] = esc_url_raw($input['logo_url']);
+        }
         
-        add_settings_field(
-            'cl_statistiky_priecinok',
-            'Cieľový priečinok pre štatistiky',
-            [$this, 'zobrazInputStatistikyPriecinok'],
-            'cl-nastavenia',
-            'cl_sekcia_statistiky'
-        );
-
-        // Nastavenia zálohovania
-        add_settings_section(
-            'cl_sekcia_zalohy',
-            'Nastavenia zálohovania',
-            [$this, 'zobrazSekciuZalohy'],
-            'cl-nastavenia'
-        );
-
-        add_settings_field(
-            'cl_interval_zalohy',
-            'Interval zálohovania',
-            [$this, 'zobrazInputIntervalZalohy'],
-            'cl-nastavenia',
-            'cl_sekcia_zalohy'
-        );
-
-        add_settings_field(
-            'cl_pocet_zaloh',
-            'Počet uchovávaných záloh',
-            [$this, 'zobrazInputPocetZaloh'],
-            'cl-nastavenia',
-            'cl_sekcia_zalohy'
-        );
-
-        // Nastavenia notifikácií
-        add_settings_section(
-            'cl_sekcia_notifikacie',
-            'Nastavenia notifikácií',
-            [$this, 'zobrazSekciuNotifikacie'],
-            'cl-nastavenia'
-        );
-
-        add_settings_field(
-            'cl_email_notifikacie',
-            'E-mailové notifikácie',
-            [$this, 'zobrazInputEmailNotifikacie'],
-            'cl-nastavenia',
-            'cl_sekcia_notifikacie'
-        );
-
-        // Systémové nastavenia
-        add_settings_section(
-            'cl_sekcia_system',
-            'Systémové nastavenia',
-            [$this, 'zobrazSekciuSystem'],
-            'cl-nastavenia'
-        );
-
-        add_settings_field(
-            'cl_debug_mode',
-            'Debug mód',
-            [$this, 'zobrazInputDebugMode'],
-            'cl-nastavenia',
-            'cl_sekcia_system'
-        );
-
-        add_settings_field(
-            'cl_cache_lifetime',
-            'Životnosť cache',
-            [$this, 'zobrazInputCacheLifetime'],
-            'cl-nastavenia',
-            'cl_sekcia_system'
-        );
-
-        // Nastavenia databáz
-        add_settings_section(
-            'cl_sekcia_databazy',
-            'Nastavenia databáz',
-            [$this, 'zobrazSekciuDatabazy'],
-            'cl-nastavenia'
-        );
-
-        add_settings_field(
-            'cl_db_backup_host',
-            'Adresa záložnej DB',
-            [$this, 'zobrazInputDbHost'],
-            'cl-nastavenia',
-            'cl_sekcia_databazy'
-        );
-
-        add_settings_field(
-            'cl_db_backup_name',
-            'Názov záložnej DB',
-            [$this, 'zobrazInputDbName'],
-            'cl-nastavenia',
-            'cl_sekcia_databazy'
-        );
-
-        add_settings_field(
-            'cl_db_backup_user',
-            'Používateľ záložnej DB',
-            [$this, 'zobrazInputDbUser'],
-            'cl-nastavenia',
-            'cl_sekcia_databazy'
-        );
-
-        add_settings_field(
-            'cl_db_backup_pass',
-            'Heslo záložnej DB',
-            [$this, 'zobrazInputDbPass'],
-            'cl-nastavenia',
-            'cl_sekcia_databazy'
-        );
-
-        add_settings_field(
-            'cl_db_sync_interval',
-            'Interval kontroly synchronizácie',
-            [$this, 'zobrazInputDbSyncInterval'],
-            'cl-nastavenia',
-            'cl_sekcia_databazy'
-        );
+        // ...add sanitization for other fields...
+        
+        return $sanitized;
     }
 
     // Callback metódy pre sekcie
@@ -457,5 +345,139 @@ class Nastavenia {
         </select>
         <p class="description">Ako často sa má kontrolovať synchronizácia databáz</p>
         <?php
+    }
+
+    // Nové callback metódy pre rozšírené nastavenia
+    public function zobrazInputFontVelkost(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $velkost = $nastavenia['font_velkost'] ?? '12';
+        ?>
+        <select name="cl_nastavenia[font_velkost]">
+            <option value="10" <?php selected($velkost, '10'); ?>>10px - Malé</option>
+            <option value="12" <?php selected($velkost, '12'); ?>>12px - Štandardné</option>
+            <option value="14" <?php selected($velkost, '14'); ?>>14px - Väčšie</option>
+        </select>
+        <p class="description">Základná veľkosť písma na lístku. Nadpisy budú primerane väčšie.</p>
+        <?php
+    }
+
+    public function zobrazInputLogoVelkost(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $velkost = $nastavenia['logo_velkost'] ?? '50';
+        ?>
+        <input type="number" name="cl_nastavenia[logo_velkost]" value="<?php echo esc_attr($velkost); ?>" class="small-text">
+        <p class="description">Maximálna šírka loga v mm. Odporúčaná hodnota: 50mm pre 54mm tlačiareň.</p>
+        <?php
+    }
+
+    public function zobrazInputPismo(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $pismo = $nastavenia['pismo'] ?? 'Arial';
+        ?>
+        <select name="cl_nastavenia[pismo]">
+            <option value="Arial" <?php selected($pismo, 'Arial'); ?>>Arial</option>
+            <option value="Courier" <?php selected($pismo, 'Courier'); ?>>Courier</option>
+            <option value="Times" <?php selected($pismo, 'Times'); ?>>Times New Roman</option>
+        </select>
+        <p class="description">Vyberte typ písma pre tlačené lístky.</p>
+        <?php
+    }
+
+    public function zobrazInputZarovnanie(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $zarovnanie = $nastavenia['zarovnanie'] ?? 'left';
+        ?>
+        <select name="cl_nastavenia[zarovnanie]">
+            <option value="left" <?php selected($zarovnanie, 'left'); ?>>Vľavo</option>
+            <option value="center" <?php selected($zarovnanie, 'center'); ?>>V strede</option>
+            <option value="right" <?php selected($zarovnanie, 'right'); ?>>Vpravo</option>
+        </select>
+        <p class="description">Zarovnanie textu na lístku.</p>
+        <?php
+    }
+
+    public function zobrazInputZalamovanie(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $zalamovanie = $nastavenia['zalamovanie'] ?? '1';
+        ?>
+        <label>
+            <input type="checkbox" name="cl_nastavenia[zalamovanie]" value="1" <?php checked($zalamovanie, '1'); ?>>
+            Povoliť zalamovanie textu
+        </label>
+        <p class="description">Pri povolení sa text automaticky zalomí na ďalší riadok, ak presiahne šírku tlačiarne.</p>
+        <?php
+    }
+
+    public function zobrazInputPredvolenaTlaciaren(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $tlaciaren = $nastavenia['predvolena_tlaciaren'] ?? '';
+        ?>
+        <input type="text" name="cl_nastavenia[predvolena_tlaciaren]" value="<?php echo esc_attr($tlaciaren); ?>" class="regular-text">
+        <p class="description">Názov predvolenej tlačiarne pre tlač lístkov.</p>
+        <?php
+    }
+
+    public function zobrazInputPocetKopii(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $kopie = $nastavenia['pocet_kopii'] ?? '1';
+        ?>
+        <input type="number" name="cl_nastavenia[pocet_kopii]" value="<?php echo esc_attr($kopie); ?>" class="small-text">
+        <p class="description">Počet kópií lístka, ktoré sa majú vytlačiť.</p>
+        <?php
+    }
+
+    public function zobrazInputCasStornovania(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $cas = $nastavenia['cas_stornovania'] ?? '300';
+        ?>
+        <input type="number" name="cl_nastavenia[cas_stornovania]" value="<?php echo esc_attr($cas); ?>" class="small-text">
+        <p class="description">Časový limit na stornovanie lístka v sekundách. Predvolená hodnota: 300 sekúnd (5 minút).</p>
+        <?php
+    }
+
+    public function zobrazInputDbAutoSync(): void {
+        $nastavenia = get_option('cl_nastavenia');
+        $auto_sync = $nastavenia['db_auto_sync'] ?? '1';
+        ?>
+        <label>
+            <input type="checkbox" name="cl_nastavenia[db_auto_sync]" value="1" <?php checked($auto_sync, '1'); ?>>
+            Povoliť automatickú synchronizáciu databáz
+        </label>
+        <p class="description">Pri povolení sa databázy budú automaticky synchronizovať podľa nastaveného intervalu.</p>
+        <?php
+    }
+
+    private function getDefaultTemplate(): string {
+        return <<<HTML
+<div class="listok">
+    <!-- Hlavička lístka -->
+    <div class="hlavicka" style="text-align:center;margin-bottom:10px;">
+        {logo}
+        <div style="margin:5px 0;">
+            <b>Cestovný lístok</b><br>
+            {predajca}<br>
+            {datum} {cas}
+        </div>
+    </div>
+
+    <!-- Položky -->
+    <div class="polozky" style="margin:10px 0;border-top:1px solid #000;border-bottom:1px solid #000;padding:5px 0;">
+        {polozky}
+    </div>
+
+    <!-- Sumár -->
+    <div class="sumar" style="text-align:right;margin:10px 0;">
+        <b>SPOLU: {suma}</b>
+    </div>
+
+    <!-- Pätička -->
+    <div class="paticka" style="text-align:center;font-size:90%;margin-top:10px;">
+        Číslo lístka: {cislo_listka}<br>
+        <div style="margin-top:5px;">
+            Ďakujeme za Vašu návštevu!
+        </div>
+    </div>
+</div>
+HTML;
     }
 }

@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) exit;
 ?>
 
 <div class="wrap">
-    <h1>Nastavenia cestovných lístkov</h1>
+    <h1>Nastavenia</h1>
     
     <form method="post" action="options.php">
         <?php
@@ -18,11 +18,11 @@ if (!defined('ABSPATH')) exit;
         <nav class="nav-tab-wrapper">
             <a href="?page=cl-nastavenia&tab=listok" 
                class="nav-tab <?php echo $active_tab === 'listok' ? 'nav-tab-active' : ''; ?>">
-                Vzhľad lístka
+                Nastavenie lístka
             </a>
             <a href="?page=cl-nastavenia&tab=predaj" 
                class="nav-tab <?php echo $active_tab === 'predaj' ? 'nav-tab-active' : ''; ?>">
-                Nastavenia predaja
+                Nastavenie predaja
             </a>
             <a href="?page=cl-nastavenia&tab=databazy" 
                class="nav-tab <?php echo $active_tab === 'databazy' ? 'nav-tab-active' : ''; ?>">
@@ -38,18 +38,55 @@ if (!defined('ABSPATH')) exit;
             <?php
             switch ($active_tab) {
                 case 'listok':
-                    // Vzhľad lístka - existujúce polia (logo, hlavička, pätička)
                     do_settings_sections('cl_sekcia_listok');
+                    ?>
+                    <div class="cl-editor-container">
+                        <!-- Live HTML Editor -->
+                        <div class="cl-editor-section">
+                            <h3>HTML šablóna lístka</h3>
+                            <div class="cl-editor-toolbar">
+                                <button type="button" class="button" data-tag="b">Tučné</button>
+                                <button type="button" class="button" data-tag="i">Kurzíva</button>
+                                <button type="button" class="button" data-tag="center">Zarovnať na stred</button>
+                                <button type="button" class="button" data-var="{logo}">Logo</button>
+                                <button type="button" class="button" data-var="{datum}">Dátum</button>
+                                <button type="button" class="button" data-var="{cas}">Čas</button>
+                                <button type="button" class="button" data-var="{cislo_listka}">Číslo lístka</button>
+                                <button type="button" class="button" data-var="{predajca}">Predajca</button>
+                            </div>
+                            <textarea name="cl_nastavenia[sablona_listka]" id="sablona-listka" class="large-text code" rows="20"><?php 
+                                echo esc_textarea(get_option('cl_nastavenia')['sablona_listka'] ?? $this->getDefaultTemplate()); 
+                            ?></textarea>
+                            <p class="description">
+                                Použite premenné v zložených zátvorkách: {datum}, {cas}, {predajca}, {logo}, {polozky}, {suma}, {cislo_listka}<br>
+                                Sekcia {polozky} bude automaticky nahradená položkami z predaja.
+                            </p>
+                        </div>
+                        
+                        <!-- Live náhľad -->
+                        <div class="cl-preview-section">
+                            <h3>Náhľad lístka</h3>
+                            <div id="cl-listok-preview" class="cl-preview-window">
+                                <!-- JavaScript vloží náhľad -->
+                            </div>
+                            <div class="cl-preview-tools">
+                                <button type="button" class="button" id="preview-refresh">Obnoviť náhľad</button>
+                                <label>
+                                    <input type="checkbox" id="preview-auto-refresh" checked> 
+                                    Automatický náhľad
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
                     break;
-                    
+                
                 case 'predaj':
-                    // Nastavenia predaja
                     do_settings_sections('cl_sekcia_predaj');
                     break;
-                    
+                
                 case 'databazy':
                     do_settings_sections('cl_sekcia_databazy');
-                    // Zobrazíme stav synchronizácie
                     $rozdiel = (new \CL\jadro\SpravcaDatabaz())->skontrolujRozdiely();
                     if ($rozdiel['ma_rozdiely']) {
                         echo '<div class="cl-db-warning">';
@@ -78,57 +115,14 @@ if (!defined('ABSPATH')) exit;
                         echo '</div>';
                     }
                     break;
-                    
+                
                 case 'system':
-                    // Systémové nastavenia
                     do_settings_sections('cl_sekcia_system');
                     break;
             }
             ?>
         </div>
 
-        <?php submit_button(); ?>
+        <?php submit_button('Uložiť nastavenia'); ?>
     </form>
-
-    <!-- Náhľad lístka - zobrazí sa len pri záložke "Vzhľad lístka" -->
-    <?php if ($active_tab === 'listok'): ?>
-    <div class="cl-nastavenia-preview">
-        <h3>Náhľad lístka</h3>
-        <div id="cl-listok-preview"></div>
-        <p class="description">
-            * Toto je orientačný náhľad. Skutočný vzhľad sa môže mierne líšiť v závislosti od použitej tlačiarne.
-        </p>
-    </div>
-    <?php endif; ?>
 </div>
-
-<?php
-$tab = $_GET['tab'] ?? 'general';
-if ($tab === 'databazy'):
-    $rozdiely = get_option('cl_db_differences', []);
-    if (!empty($rozdiely)): ?>
-        <div class="card">
-            <h2>Rozdiely v databázach</h2>
-            <p>Zistené <?php echo date('d.m.Y H:i', strtotime($rozdiely['timestamp'])); ?></p>
-            
-            <?php foreach ($rozdiely as $tabulka => $data): ?>
-                <h3>Tabuľka: <?php echo esc_html($tabulka); ?></h3>
-                <p>Počet záznamov:</p>
-                <ul>
-                    <li>Hlavná DB: <?php echo $data['primary_count']; ?></li>
-                    <li>Záložná DB: <?php echo $data['backup_count']; ?></li>
-                </ul>
-                
-                <div class="cl-db-actions">
-                    <button class="button sync-db" data-source="primary">
-                        Použiť dáta z hlavnej DB
-                    </button>
-                    <button class="button sync-db" data-source="backup">
-                        Použiť dáta zo záložnej DB
-                    </button>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif;
-endif;
-?>
