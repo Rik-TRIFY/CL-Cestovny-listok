@@ -281,58 +281,48 @@
 }
 
 #cl-device-frame {
-    position: relative;
+    width: 400px !important;
+    height: 700px !important;
     margin: 20px auto;
-    background: #000;
-    border-radius: 20px;
-    padding: 10px;
-    box-shadow: 0 0 0 2px #666;
-    transition: all 0.3s ease;
-    width: 375px;
-    height: 667px;
-    background: #1a1a1a;
-    border-radius: 40px;
-    padding: 15px;
-    box-shadow: 0 0 0 2px #666, 0 5px 15px rgba(0,0,0,0.2);
+    background: #fff;
+    border: 1px solid #000;
     overflow: hidden;
-}
-
-#cl-device-frame::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 150px;
-    height: 25px;
-    background: #1a1a1a;
-    border-radius: 0 0 20px 20px;
-    z-index: 2;
-}
-
-#cl-device-frame::after {
-    content: '';
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 4px;
-    background: #666;
-    border-radius: 4px;
+    position: relative;
 }
 
 #cl-pos-preview {
+    width: 400px !important;
+    height: 700px;
+    overflow-y: auto;
     background: #fff;
-    overflow-y: auto;
-    transform-origin: top left;
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 30px;
-    overflow-y: auto;
-    position: relative;
-    z-index: 1;
+}
+
+/* Odstránime všetky nepotrebné štýly */
+#cl-device-frame::before,
+#cl-device-frame::after,
+.cl-device-selector,
+#cl-custom-resolution,
+.cl-terminal-frame,
+.cl-terminal-frame::before,
+.cl-terminal-frame::after {
+    display: none !important;
+}
+
+/* Vyčistíme media queries */
+@media screen and (max-width: 1400px) {
+    .cl-grid-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .cl-grid-right {
+        position: static;
+        padding: 10px;
+    }
+
+    #cl-device-frame {
+        transform: none;
+        margin: 0 auto;
+    }
 }
 
 /* Responzívnosť pre admin */
@@ -448,4 +438,55 @@ textarea.code {
     white-space: pre;
     word-wrap: normal;
     overflow: auto;
+}
+
+/* POS Preview - pevné rozmery */
+#cl-device-frame {
+    position: relative;
+    margin: 20px auto;
+    width: 400px !important;
+    height: 700px !important;
+    background: #9b9b9b;
+    border: 1px solid #000;
+    overflow: hidden;
+}
+
+#cl-pos-preview {
+    width: 400px !important;
+    height: 700px;
+    overflow-y: auto;
+    background: #fff;
+    position: relative;
+}
+
+/* Odstránime všetky pseudo-elementy a nepotrebné štýly */
+#cl-device-frame::before,
+#cl-device-frame::after,
+.cl-device-selector,
+#cl-custom-resolution {
+    display: none !important;
+}
+
+/* Odstránime nepotrebné nastavenia veľkosti */
+.cl-device-selector,
+#cl-custom-resolution {
+    display: none !important;
+}
+
+/* Upravíme css pre responzívnosť */
+@media screen and (max-width: 1400px) {
+    .cl-grid-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .cl-grid-right {
+        position: static;
+        padding: 10px;
+    }
+
+    /* Odstránime škálovanie na menších obrazovkách */
+    #cl-device-frame {
+        transform: none;
+        margin: 0 auto;
+    }
 }

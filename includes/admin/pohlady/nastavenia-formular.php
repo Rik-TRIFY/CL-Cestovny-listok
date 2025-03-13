@@ -147,42 +147,16 @@ $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
                                     {pos_footer} - pätička s tlačidlom pre dokončenie
                                 </p>
                             </div>
-
-                            <!-- Základné nastavenia -->
-                            <div class="cl-editor-box">
-                                <h3>Nastavenia vzhľadu</h3>
-                                <table class="form-table">
-                                    <tr>
-                                        <th>Farba pozadia:</th>
-                                        <td>
-                                            <input type="color" name="cl_nastavenia[pos_bg_color]" 
-                                                   value="<?php echo esc_attr($spravca->nacitaj('pos_bg_color', '#f0f0f0')); ?>">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Farba tlačidiel:</th>
-                                        <td>
-                                            <input type="color" name="cl_nastavenia[pos_button_color]" 
-                                                   value="<?php echo esc_attr($spravca->nacitaj('pos_button_color', '#ffffff')); ?>">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Farba textu:</th>
-                                        <td>
-                                            <input type="color" name="cl_nastavenia[pos_text_color]" 
-                                                   value="<?php echo esc_attr($spravca->nacitaj('pos_text_color', '#000000')); ?>">
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
                         </div>
 
                         <!-- Náhľad -->
                         <div class="cl-grid-right">
                             <div class="cl-preview-box">
                                 <h3>Náhľad POS terminálu</h3>
-                                <div id="cl-pos-preview">
-                                    <!-- Tu sa zobrazí náhľad -->
+                                <div id="cl-device-frame">
+                                    <div id="cl-pos-preview">
+                                        <!-- Tu sa zobrazí náhľad -->
+                                    </div>
                                 </div>
                                 <div class="cl-preview-tools">
                                     <button type="button" class="button" id="pos-preview-refresh">Obnoviť náhľad</button>
