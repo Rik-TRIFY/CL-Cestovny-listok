@@ -53,6 +53,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // WordPress Media Uploader pre obrázky
+    document.querySelectorAll('.cl-editor-toolbar button[data-tag="img"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const mediaFrame = wp.media({
+                title: 'Vybrať obrázok',
+                multiple: false,
+                library: {
+                    type: 'image'
+                }
+            });
+
+            mediaFrame.on('select', function() {
+                const attachment = mediaFrame.state().get('selection').first().toJSON();
+                const imgTag = `<img src="${attachment.url}" alt="" style="max-width:100%;height:auto;">`;
+                
+                // Vložíme tag na pozíciu kurzora
+                if (editor.selectionStart || editor.selectionStart === 0) {
+                    const startPos = editor.selectionStart;
+                    editor.value = editor.value.substring(0, startPos) + imgTag + editor.value.substring(editor.selectionEnd);
+                    aktualizujNahlad();
+                }
+            });
+
+            mediaFrame.open();
+        });
+    });
+
     function aktualizujNahlad() {
         let html = editor.value;
         

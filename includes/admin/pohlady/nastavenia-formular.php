@@ -44,23 +44,24 @@ if (!defined('ABSPATH')) exit;
                         <div class="cl-grid-left">
                             <div class="cl-editor-box">
                                 <h3>HTML šablóna lístka</h3>
-                                <div class="cl-editor-toolbar">
-                                    <button type="button" class="button" data-tag="b">Tučné</button>
-                                    <button type="button" class="button" data-tag="i">Kurzíva</button>
-                                    <button type="button" class="button" data-tag="center">Zarovnať na stred</button>
-                                    <button type="button" class="button" data-var="{logo}">Logo</button>
-                                    <button type="button" class="button" data-var="{datum}">Dátum</button>
-                                    <button type="button" class="button" data-var="{cas}">Čas</button>
-                                    <button type="button" class="button" data-var="{cislo_listka}">Číslo lístka</button>
-                                    <button type="button" class="button" data-var="{predajca}">Predajca</button>
-                                    <button type="button" class="button" data-var="{polozky}">Položky</button>
-                                    <button type="button" class="button" data-var="{suma}">Suma</button>
-                                </div>
-                                <textarea name="cl_nastavenia[sablona_listka]" id="sablona-listka" class="large-text code" rows="20"><?php 
-                                    echo esc_textarea(get_option('cl_nastavenia')['sablona_listka'] ?? $this->getDefaultTemplate()); 
-                                ?></textarea>
+                                <?php
+                                wp_editor(
+                                    get_option('cl_nastavenia')['sablona_listka'] ?? $this->getDefaultTemplate(),
+                                    'sablona-listka',
+                                    [
+                                        'media_buttons' => true,
+                                        'textarea_name' => 'cl_nastavenia[sablona_listka]',
+                                        'textarea_rows' => 20,
+                                        'teeny' => false,
+                                        'tinymce' => [
+                                            'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_adv,cl_variables',
+                                            'toolbar2' => 'strikethrough,hr,forecolor,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help'
+                                        ]
+                                    ]
+                                );
+                                ?>
                                 <p class="description">
-                                    Použite premenné v zložených zátvorkách: {datum}, {cas}, {predajca}, {logo}, {polozky}, {suma}, {cislo_listka}<br>
+                                    Použite premenné: {datum}, {cas}, {predajca}, {logo}, {polozky}, {suma}, {cislo_listka}<br>
                                     Sekcia {polozky} bude automaticky nahradená položkami z predaja.
                                 </p>
                             </div>

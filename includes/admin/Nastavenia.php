@@ -6,6 +6,27 @@ namespace CL\Admin;
 class Nastavenia {
     public function __construct() {
         add_action('admin_init', [$this, 'registrujNastavenia']);
+        add_action('admin_enqueue_scripts', [$this, 'pridajMedia']);
+        add_filter('mce_buttons', [$this, 'registrujTlacitka']);
+        add_filter('mce_external_plugins', [$this, 'registrujPlugin']);
+    }
+
+    public function pridajMedia($hook): void {
+        if ($hook !== 'toplevel_page_cl-nastavenia') {
+            return;
+        }
+
+        wp_enqueue_media();
+        wp_enqueue_editor();
+        
+        // Pridáme vlastný plugin pre TinyMCE
+        wp_enqueue_script(
+            'cl-tinymce-plugin',
+            CL_ASSETS_URL . 'js/tinymce-plugin.js',
+            ['jquery'],
+            CL_VERSION,
+            true
+        );
     }
 
     public function zobrazStranku(): void {
@@ -97,12 +118,30 @@ class Nastavenia {
     public function sanitizeNastavenia($input) {
         $sanitized = [];
         
-        // Sanitize each input field
+        // Zachováme HTML v šablóne lístka
+        if (isset($input['sablona_listka'])) {
+            $sanitized['sablona_listka'] = wp_kses($input['sablona_listka'], [
+                'div' => ['class' => [], 'style' => []],
+                'span' => ['class' => [], 'style' => []],
+                'b' => [],
+                'i' => [],
+                'center' => [],
+                'img' => ['src' => [], 'alt' => [], 'style' => [], 'class' => []],
+                'br' => []
+            ]);
+        }
+        
+        // Ostatné polia
         if (isset($input['logo_url'])) {
             $sanitized['logo_url'] = esc_url_raw($input['logo_url']);
         }
         
-        // ...add sanitization for other fields...
+        // Pridáme všetky ostatné nastavenia
+        foreach ($input as $key => $value) {
+            if (!isset($sanitized[$key])) {
+                $sanitized[$key] = sanitize_text_field($value);
+            }
+        }
         
         return $sanitized;
     }
@@ -447,7 +486,24 @@ class Nastavenia {
         <?php
     }
 
+    public function registrujTlacitka($buttons) {
+        array_push($buttons, 'cl_variables');
+        return $buttons;
+    }
+
+    public function registrujPlugin($plugins) {
+        $plugins['cl_variables'] = CL_ASSETS_URL . 'js/tinymce-plugin.js';
+        return $plugins;
+    }
+
     private function getDefaultTemplate(): string {
+        // Načítame existujúcu šablónu ak existuje
+        $nastavenia = get_option('cl_nastavenia');
+        if (!empty($nastavenia['sablona_listka'])) {
+            return $nastavenia['sablona_listka'];
+        }
+
+        // Inak vrátime predvolenú šablónu
         return <<<HTML
 <div class="listok">
     <!-- Hlavička lístka -->
