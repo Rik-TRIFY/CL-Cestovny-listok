@@ -106,4 +106,117 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Spustíme prvé načítanie
     nacitajListky();
+
+    // Pridanie nového lístka
+    document.getElementById('novy-listok-form')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        formData.append('action', 'cl_pridaj_listok');
+        
+        fetch(ajaxurl, {
+            method: 'POST',
+            body: new URLSearchParams(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Chyba: ' + data.data);
+            }
+        })
+        .catch(error => {
+            console.error('Chyba:', error);
+            alert('Nastala chyba pri komunikácii so serverom');
+        });
+    });
+
+    // Prepínač aktívny/neaktívny
+    document.querySelectorAll('.aktivny-switch').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const tr = this.closest('tr');
+            const id = tr.dataset.id;
+            
+            fetch(ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'cl_prepni_aktivny',
+                    nonce: cl_admin.nonce,
+                    id: id,
+                    aktivny: this.checked ? 1 : 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    this.checked = !this.checked;
+                    alert('Chyba: ' + data.data);
+                }
+            });
+        });
+    });
+
+    // Úprava lístka
+    document.querySelectorAll('.edit-listok').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tr = this.closest('tr');
+            tr.querySelector('.listok-nazov').style.display = 'none';
+            tr.querySelector('.listok-nazov-edit').style.display = 'inline';
+            tr.querySelector('.listok-cena').style.display = 'none';
+            tr.querySelector('.listok-cena-edit').style.display = 'inline';
+            this.style.display = 'none';
+            tr.querySelector('.save-listok').style.display = 'inline-block';
+            tr.querySelector('.cancel-edit').style.display = 'inline-block';
+        });
+    });
+
+    // Zrušenie úprav
+    document.querySelectorAll('.cancel-edit').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tr = this.closest('tr');
+            tr.querySelector('.listok-nazov').style.display = 'inline';
+            tr.querySelector('.listok-nazov-edit').style.display = 'none';
+            tr.querySelector('.listok-cena').style.display = 'inline';
+            tr.querySelector('.listok-cena-edit').style.display = 'none';
+            this.style.display = 'none';
+            tr.querySelector('.save-listok').style.display = 'none';
+            tr.querySelector('.edit-listok').style.display = 'inline-block';
+        });
+    });
+
+    // Uloženie úprav
+    document.querySelectorAll('.save-listok').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tr = this.closest('tr');
+            const id = tr.dataset.id;
+            const nazov = tr.querySelector('.listok-nazov-edit').value;
+            const cena = tr.querySelector('.listok-cena-edit').value;
+
+            fetch(ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'cl_uprav_listok',
+                    nonce: cl_admin.nonce,
+                    id: id,
+                    nazov: nazov,
+                    cena: cena
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Chyba: ' + data.data);
+                }
+            });
+        });
+    });
 });

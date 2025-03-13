@@ -1,79 +1,72 @@
 <?php
 declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
+
+global $wpdb;
+$listky = $wpdb->get_results(
+    "SELECT * FROM `{$wpdb->prefix}cl_typy_listkov` ORDER BY id ASC"
+);
 ?>
 
 <div class="wrap">
-    <h1 class="wp-heading-inline">Správa lístkov</h1>
-    <a href="#" class="page-title-action" id="pridat-listok">Pridať nový lístok</a>
+    <h1>Správa lístkov</h1>
     
-    <div class="cl-listky-container">
-        <div class="cl-listky-filter">
-            <input type="text" id="vyhladavanie" placeholder="Vyhľadať lístok...">
-            <select id="filter-trieda">
-                <option value="">Všetky triedy</option>
-            </select>
-            <select id="filter-skupina">
-                <option value="">Všetky skupiny</option>
-            </select>
-        </div>
+    <div class="cl-listky-form">
+        <h2>Pridať nový lístok</h2>
+        <form id="novy-listok-form" method="post">
+            <?php wp_nonce_field('cl_listky_nonce', 'nonce'); ?>
+            <div class="form-group">
+                <label>Názov lístka:</label>
+                <input type="text" name="nazov" required class="regular-text">
+            </div>
+            <div class="form-group">
+                <label>Cena (€):</label>
+                <input type="number" name="cena" step="0.01" min="0" required>
+            </div>
+            <button type="submit" class="button button-primary">Pridať lístok</button>
+        </form>
+    </div>
 
+    <div class="cl-listky-zoznam">
+        <h2>Existujúce lístky</h2>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Názov</th>
                     <th>Cena</th>
-                    <th>Trieda</th>
-                    <th>Skupina</th>
-                    <th>Poradie</th>
                     <th>Stav</th>
+                    <th>Vytvorené</th>
                     <th>Akcie</th>
                 </tr>
             </thead>
-            <tbody id="listky-zoznam">
-                <!-- Dynamicky generované JavaScript-om -->
+            <tbody>
+                <?php foreach ($listky as $listok): ?>
+                <tr data-id="<?php echo $listok->id; ?>">
+                    <td><?php echo esc_html($listok->id); ?></td>
+                    <td>
+                        <span class="listok-nazov"><?php echo esc_html($listok->nazov); ?></span>
+                        <input type="text" class="listok-nazov-edit" value="<?php echo esc_attr($listok->nazov); ?>" style="display: none;">
+                    </td>
+                    <td>
+                        <span class="listok-cena"><?php echo number_format($listok->cena, 2); ?> €</span>
+                        <input type="number" class="listok-cena-edit" value="<?php echo $listok->cena; ?>" step="0.01" min="0" style="display: none;">
+                    </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" class="aktivny-switch" <?php echo $listok->aktivny ? 'checked' : ''; ?>>
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td><?php echo date('d.m.Y H:i', strtotime($listok->vytvorene)); ?></td>
+                    <td>
+                        <button class="button edit-listok">Upraviť</button>
+                        <button class="button button-primary save-listok" style="display: none;">Uložiť</button>
+                        <button class="button cancel-edit" style="display: none;">Zrušiť</button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
             </tbody>
         </table>
-    </div>
-</div>
-
-<!-- Modal pre pridanie/úpravu lístka -->
-<div id="listok-modal" class="cl-modal">
-    <div class="cl-modal-content">
-        <span class="cl-modal-close">&times;</span>
-        <h2>Lístok</h2>
-        <form id="listok-formular">
-            <input type="hidden" name="id" id="listok-id">
-            <div class="form-field">
-                <label>Názov</label>
-                <input type="text" name="nazov" required>
-            </div>
-            <div class="form-field">
-                <label>Cena</label>
-                <input type="number" name="cena" step="0.01" required>
-            </div>
-            <div class="form-field">
-                <label>Trieda</label>
-                <input type="text" name="trieda">
-            </div>
-            <div class="form-field">
-                <label>Skupina</label>
-                <input type="text" name="skupina">
-            </div>
-            <div class="form-field">
-                <label>Poradie</label>
-                <input type="number" name="poradie" value="0">
-            </div>
-            <div class="form-field">
-                <label>
-                    <input type="checkbox" name="aktivny" checked>
-                    Aktívny
-                </label>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="button button-primary">Uložiť</button>
-                <button type="button" class="button cl-modal-close">Zrušiť</button>
-            </div>
-        </form>
     </div>
 </div>

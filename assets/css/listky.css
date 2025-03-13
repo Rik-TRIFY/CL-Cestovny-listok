@@ -61,3 +61,78 @@
     border-top: 1px solid #eee;
     text-align: right;
 }
+
+.cl-listky-form {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.cl-listky-form .form-group {
+    margin-bottom: 15px;
+}
+
+.cl-listky-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* Switch štýly */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* Úpravy formulára */
+.listok-nazov-edit,
+.listok-cena-edit {
+    width: 100%;
+    max-width: 150px;
+}
+
+.wp-list-table td {
+    vertical-align: middle;
+}

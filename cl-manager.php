@@ -42,9 +42,6 @@ spl_autoload_register(function ($class) {
         // Vytvoríme cestu k súboru
         $file = CL_PLUGIN_DIR . 'includes/' . str_replace('\\', '/', $relative_class) . '.php';
         
-        // Debug log pre sledovanie načítavania tried
-        error_log("Loading class $class from file $file");
-        
         // Ak súbor existuje, načítame ho
         if (file_exists($file)) {
             require_once $file;
@@ -56,14 +53,14 @@ spl_autoload_register(function ($class) {
 
 class CestovneListky {
     private static ?self $instancia = null;
-    
+
     public static function ziskajInstanciu(): self {
         if (self::$instancia === null) {
             self::$instancia = new self();
         }
         return self::$instancia;
     }
-    
+
     private function __construct() {
         $this->inicializacia();
     }
@@ -88,7 +85,7 @@ class CestovneListky {
             CL_PREDAJ_DIR,
             CL_LOGS_DIR
         ];
-        
+
         foreach ($priecinky as $priecinok) {
             if (!file_exists($priecinok)) {
                 wp_mkdir_p($priecinok);
@@ -96,7 +93,7 @@ class CestovneListky {
             }
         }
     }
-    
+
     public function aktivacia(): void {
         if (!$this->skontrolujPoziadavky()) {
             deactivate_plugins(plugin_basename(__FILE__));
@@ -124,7 +121,7 @@ class CestovneListky {
 
         // Základné nastavenia - zmenené na public metódu
         $spravca = new jadro\SpravcaVerzie();
-        $spravca->inicializuj();  // Nová public metóda namiesto privátnej
+        $spravca->inicializuj();
 
         // Aktivácia kontrol
         $kontroler = new jadro\Kontroler();
@@ -133,7 +130,7 @@ class CestovneListky {
     
     public function skontrolujPoziadavky(): bool {
         global $wp_version;
-    
+
         if (version_compare(PHP_VERSION, '8.1', '<')) {
             add_action('admin_notices', function() {
                 echo '<div class="error"><p>Plugin CL - Cestovné lístky vyžaduje PHP 8.1 alebo novšie. Aktuálna verzia: ' . PHP_VERSION . '</p></div>';
@@ -143,7 +140,6 @@ class CestovneListky {
 
         if (version_compare($wp_version, '6.7.2', '<')) {
             add_action('admin_notices', function() {
-                global $wp_version;
                 echo '<div class="error"><p>Plugin CL - Cestovné lístky vyžaduje WordPress 6.7.2 alebo novší. Aktuálna verzia: ' . $wp_version . '</p></div>';
             });
             return false;
@@ -151,7 +147,7 @@ class CestovneListky {
 
         return true;
     }
-    
+
     private function vytvorTabulky(): void {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
@@ -188,7 +184,7 @@ class CestovneListky {
             dbDelta($query);
         }
     }
-    
+
     public function adminMenu(): void {
         global $menu;
         add_menu_page(
@@ -202,7 +198,7 @@ class CestovneListky {
         );
         
         $menu[1] = array('', 'read', 'separator1', '', 'wp-menu-separator');
-    
+
         add_submenu_page(
             'cl-manager',
             'Prehľad',
@@ -287,38 +283,21 @@ class CestovneListky {
     }
 
     public function pridajAssets(): void {
+        if (!isset($_GET['page']) || !in_array($_GET['page'], ['cl-listky'])) {
+            return;
+        }
+
         // CSS
         wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
-        wp_enqueue_style('cl-terminal', CL_ASSETS_URL . 'css/terminal.css', [], CL_VERSION);
         wp_enqueue_style('cl-listky', CL_ASSETS_URL . 'css/listky.css', [], CL_VERSION);
-        wp_enqueue_style('cl-prehlad', CL_ASSETS_URL . 'css/prehlad.css', [], CL_VERSION);
-        wp_enqueue_style('cl-export', CL_ASSETS_URL . 'css/export.css', [], CL_VERSION);
-        wp_enqueue_style('cl-notifikacie', CL_ASSETS_URL . 'css/notifikacie.css', [], CL_VERSION);
-        
-        // Pridáme nové CSS súbory
-        wp_enqueue_style('cl-historia', CL_ASSETS_URL . 'css/historia.css', [], CL_VERSION);
         
         // JavaScript
-        wp_enqueue_script('cl-common', CL_ASSETS_URL . 'js/common.js', [], CL_VERSION, true);
-        wp_enqueue_script('cl-admin', CL_ASSETS_URL . 'js/admin.js', ['jquery'], CL_VERSION, true);
-        wp_enqueue_script('cl-terminal', CL_ASSETS_URL . 'js/terminal.js', ['jquery'], CL_VERSION, true);
         wp_enqueue_script('cl-listky', CL_ASSETS_URL . 'js/listky.js', ['jquery'], CL_VERSION, true);
-        wp_enqueue_script('cl-prehlad', CL_ASSETS_URL . 'js/prehlad.js', ['jquery'], CL_VERSION, true);
-        wp_enqueue_script('cl-export', CL_ASSETS_URL . 'js/export.js', ['jquery'], CL_VERSION, true);
-        wp_enqueue_script('cl-tlac', CL_ASSETS_URL . 'js/tlac.js', ['jquery'], CL_VERSION, true);
-        
-        // Pridáme nové JavaScript súbory
-        wp_enqueue_script('cl-historia', CL_ASSETS_URL . 'js/historia.js', ['jquery'], CL_VERSION, true);
-        wp_enqueue_script('cl-zalohy', CL_ASSETS_URL . 'js/zalohy.js', ['jquery'], CL_VERSION, true);
         
         // Lokalizácia premenných pre JavaScript
-        wp_localize_script('cl-admin', 'cl_admin', [
-            'nonce' => wp_create_nonce('cl_admin_nonce'),
-            'auto_tlac' => get_option('cl_nastavenia')['auto_tlac'] ?? false
-        ]);
-        wp_localize_script('cl-terminal', 'cl_pos', [
+        wp_localize_script('cl-listky', 'cl_admin', [
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('cl_pos_nonce')
+            'nonce' => wp_create_nonce('cl_listky_nonce')
         ]);
     }
 
@@ -331,7 +310,10 @@ class CestovneListky {
     }
 
     public function zobrazSpravuListkov(): void {
-        (new Admin\SpravcaListkov())->zobrazSpravuListkov();
+        if (!current_user_can('manage_options')) {
+            wp_die('Nedostatočné oprávnenia');
+        }
+        require CL_INCLUDES_DIR . 'admin/pohlady/sprava-listkov.php';
     }
 
     public function zobrazNastavenia(): void {

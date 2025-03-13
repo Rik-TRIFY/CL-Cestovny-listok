@@ -4,86 +4,60 @@ declare(strict_types=1);
 namespace CL\Admin;
 
 class SpravcaListkov {
-    private \CL\Jadro\Databaza $databaza;
+    private \CL\jadro\Databaza $databaza;
     
     public function __construct() {
-        $this->databaza = new \CL\Jadro\Databaza();
+        $this->databaza = new \CL\jadro\Databaza();
         
-        add_action('wp_ajax_cl_uloz_listok', [$this, 'ajaxUlozListok']);
-        add_action('wp_ajax_cl_zmaz_listok', [$this, 'ajaxZmazListok']);
-        add_action('wp_ajax_cl_nacitaj_listky', [$this, 'ajaxNacitajListky']);
+        // AJAX handlery
+        add_action('wp_ajax_cl_pridaj_listok', [$this, 'pridajListok']);
+        add_action('wp_ajax_cl_uprav_listok', [$this, 'upravListok']);
+        add_action('wp_ajax_cl_prepni_aktivny', [$this, 'prepniAktivny']);
     }
-    
+
     public function zobrazSpravuListkov(): void {
         if (!current_user_can('manage_options')) {
             wp_die('Nedostatočné oprávnenia');
         }
-        
         require_once CL_INCLUDES_DIR . 'admin/pohlady/sprava-listkov.php';
     }
-    
-    public function ajaxUlozListok(): void {
-        check_ajax_referer('cl_admin_nonce', 'nonce');
+
+    public function pridajListok(): void {
+        check_ajax_referer('cl_listky_nonce', 'nonce');
         
-        $data = [
-            'nazov' => sanitize_text_field($_POST['nazov']),
-            'cena' => (float)$_POST['cena'],
-            'trieda' => sanitize_text_field($_POST['trieda']),
-            'skupina' => sanitize_text_field($_POST['skupina']),
-            'aktivny' => (bool)$_POST['aktivny'],
-            'poradie' => (int)$_POST['poradie']
-        ];
-        
-        $id = $_POST['id'] ?? null;
-        
-        try {
-            if ($id) {
-                $this->databaza->aktualizuj('CL-typy_listkov', $data, ['id' => $id]);
-            } else {
-                $id = $this->databaza->vloz('CL-typy_listkov', $data);
-            }
-            
-            wp_send_json_success(['id' => $id]);
-        } catch (\Exception $e) {
-            wp_send_json_error($e->getMessage());
-        }
-    }
-    
-    public function ajaxNacitajListky(): void {
-        check_ajax_referer('cl_admin_nonce', 'nonce');
-        
-        $filter = sanitize_text_field($_POST['filter'] ?? '');
-        $where = '';
-        $params = [];
-        
-        if ($filter) {
-            $where = "WHERE nazov LIKE %s OR trieda LIKE %s OR skupina LIKE %s";
-            $filter_param = '%' . $this->databaza->esc_like($filter) . '%';
-            $params = [$filter_param, $filter_param, $filter_param];
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nedostatočné oprávnenia');
+            return;
         }
         
-        $listky = $this->databaza->nacitaj(
-            "SELECT * FROM `CL-typy_listkov` $where ORDER BY poradie ASC",
-            $params
+        global $wpdb;
+        $nazov = sanitize_text_field($_POST['nazov']);
+        $cena = (float)$_POST['cena'];
+        
+        if (empty($nazov) || $cena <= 0) {
+            wp_send_json_error('Neplatné údaje');
+            return;
+        }
+        
+        $success = $wpdb->insert(
+            $wpdb->prefix . 'cl_typy_listkov',
+            [
+                'nazov' => $nazov,
+                'cena' => $cena,
+                'aktivny' => true
+            ],
+            ['%s', '%f', '%d']
         );
         
-        // Získame unikátne triedy a skupiny pre filtre
-        $triedy = array_unique(array_column($listky, 'trieda'));
-        $skupiny = array_unique(array_column($listky, 'skupina'));
-        
-        ob_start();
-        require CL_INCLUDES_DIR . 'admin/pohlady/listky-tabulka.php';
-        $html = ob_get_clean();
-        
-        wp_send_json_success([
-            'html' => $html,
-            'triedy' => $triedy,
-            'skupiny' => $skupiny
-        ]);
+        if ($success) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error('Chyba pri ukladaní: ' . $wpdb->last_error);
+        }
     }
-    
-    public function ajaxZmazListok(): void {
-        check_ajax_referer('cl_admin_nonce', 'nonce');
+
+    public function upravListok(): void {
+        check_ajax_referer('cl_listky_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Nedostatočné oprávnenia');
@@ -91,35 +65,46 @@ class SpravcaListkov {
         }
         
         $id = (int)$_POST['id'];
+        $nazov = sanitize_text_field($_POST['nazov']);
+        $cena = (float)$_POST['cena'];
         
-        try {
-            // Kontrola či lístok nie je použitý v predaji
-            $pouzity = $this->databaza->nacitaj(
-                "SELECT COUNT(*) as pocet FROM `CL-polozky_predaja` WHERE typ_listka_id = %d",
-                [$id]
-            );
-            
-            if ($pouzity[0]['pocet'] > 0) {
-                wp_send_json_error('Lístok nie je možné zmazať, pretože je použitý v predaji');
-                return;
-            }
-
-            $this->databaza->zmaz('CL-typy_listkov', ['id' => $id]);
+        if (empty($nazov) || $cena <= 0) {
+            wp_send_json_error('Neplatné údaje');
+            return;
+        }
+        
+        $success = $this->databaza->aktualizuj(
+            "UPDATE `{$wpdb->prefix}cl_typy_listkov` SET nazov = %s, cena = %f WHERE id = %d",
+            [$nazov, $cena, $id]
+        );
+        
+        if ($success) {
             wp_send_json_success();
-        } catch (\Exception $e) {
-            wp_send_json_error($e->getMessage());
+        } else {
+            wp_send_json_error('Chyba pri ukladaní');
         }
     }
 
-    public function aktualizuj($id, $data): bool {
-        try {
-            return $this->databaza->aktualizuj('CL-typy_listkov', $data, ['id' => $id]);
-        } catch (\Exception $e) {
-            $this->spravca->zapisDoLogu('LISTKY_AKTUALIZACIA_ERROR', [
-                'id' => $id,
-                'error' => $e->getMessage()
-            ]);
-            return false;
+    public function prepniAktivny(): void {
+        check_ajax_referer('cl_listky_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nedostatočné oprávnenia');
+            return;
+        }
+        
+        $id = (int)$_POST['id'];
+        $aktivny = (bool)$_POST['aktivny'];
+        
+        $success = $this->databaza->aktualizuj(
+            "UPDATE `{$wpdb->prefix}cl_typy_listkov` SET aktivny = %d WHERE id = %d",
+            [$aktivny, $id]
+        );
+        
+        if ($success) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error('Chyba pri ukladaní');
         }
     }
 }
