@@ -27,39 +27,50 @@
     width: 90%;
     max-width: 500px;
     margin: 50px auto;
-    padding: 20px;
+    padding: 30px;
     border-radius: 4px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .cl-modal-close {
     position: absolute;
-    right: 20px;
-    top: 20px;
+    right: 15px;
+    top: 15px;
+    font-size: 24px;
     cursor: pointer;
-    font-size: 20px;
+    color: #666;
 }
 
 .form-field {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .form-field label {
     display: block;
     margin-bottom: 5px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
-.form-field input[type="text"],
-.form-field input[type="number"] {
+.form-field input {
     width: 100%;
+    padding: 8px;
+}
+
+.form-field .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
 }
 
 .form-actions {
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
     border-top: 1px solid #eee;
     text-align: right;
+}
+
+.form-actions button {
+    margin-left: 10px;
 }
 
 .cl-listky-form {
@@ -135,4 +146,28 @@ input:checked + .slider:before {
 
 .wp-list-table td {
     vertical-align: middle;
+}
+
+/* Tabuľka */
+.cl-stav {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.cl-stav.aktivny {
+    background: #edf7ed;
+    color: #2e7d32;
+}
+
+.cl-stav.neaktivny {
+    background: #fdecea;
+    color: #d32f2f;
+}
+
+td.akcie {
+    display: flex;
+    gap: 5px;
 }
