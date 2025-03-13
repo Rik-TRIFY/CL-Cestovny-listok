@@ -1,34 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Výber loga
-    document.getElementById('cl_upload_logo')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const frame = wp.media({
-            title: 'Vyberte logo lístka',
-            multiple: false,
-            library: {
-                type: 'image'
-            }
-        });
-        
-        frame.on('select', function() {
-            const attachment = frame.state().get('selection').first().toJSON();
-            document.getElementById('cl_logo_url').value = attachment.url;
-            aktualizujNahlad();
-        });
-        
-        frame.open();
-    });
-    
     // Live náhľad
     ['cl_logo_url', 'cl_hlavicka', 'cl_paticka'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', aktualizujNahlad);
     });
     
-    // Editor lístka
+    // Editor lístka - vytvorenie základných premenných JEDEN KRÁT na začiatku
     const editor = document.getElementById('sablona-listka');
     const preview = document.getElementById('cl-listok-preview');
     const autoRefresh = document.getElementById('preview-auto-refresh');
+    const posTextarea = document.getElementById('sablona-pos');
+    const posPreview = document.getElementById('cl-pos-preview');
+    const posAutoRefresh = document.getElementById('pos-preview-auto-refresh');
 
     // Toolbar tlačidlá
     document.querySelectorAll('.cl-editor-toolbar button').forEach(btn => {
@@ -207,9 +189,8 @@ document.addEventListener('DOMContentLoaded', function() {
             background: document.getElementById('pos_color_background')?.value
         };
 
-        const preview = document.getElementById('cl-pos-preview');
-        if (preview) {
-            preview.className = `cl-preview-window pos-layout-${layout}`;
+        if (posPreview) {
+            posPreview.className = `cl-preview-window pos-layout-${layout}`;
             
             // Apply custom styles
             const customStyles = document.createElement('style');
@@ -222,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     background-color: ${colors.background};
                 }
             `;
-            preview.appendChild(customStyles);
+            posPreview.appendChild(customStyles);
         }
     }
 
@@ -238,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const deviceSelect = document.getElementById('cl-device-select');
     const customResolution = document.getElementById('cl-custom-resolution');
     const deviceFrame = document.getElementById('cl-device-frame');
-    const posPreview = document.getElementById('cl-pos-preview');
     const widthInput = document.getElementById('cl-width');
     const heightInput = document.getElementById('cl-height');
     const posWidthInput = document.getElementById('pos_width');
@@ -369,13 +349,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Pridáme funkciu pre náhľad POS terminálu
     function aktualizujPosNahlad() {
-        const content = document.getElementById('sablona-pos').value;
-        const preview = document.getElementById('cl-pos-preview');
-        
-        if (!preview) return;
+        if (!posPreview) return;
     
         // Nahradíme premenné testovacími dátami
-        let html = content
+        let html = posTextarea?.value || '';
+        html = html
             .replace('{pos_header}', `
                 <div class="pos-header">
                     <div class="pos-logo">Predaj lístkov</div>
@@ -427,26 +405,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `);
     
-        preview.innerHTML = html;
+        posPreview.innerHTML = html;
     }
     
     // Pridáme event listenery pre POS náhľad
     document.getElementById('pos-preview-refresh')?.addEventListener('click', aktualizujPosNahlad);
     
-    const posTextarea = document.getElementById('sablona-pos');
     if (posTextarea) {
         posTextarea.addEventListener('input', function() {
-            if (document.getElementById('pos-preview-auto-refresh').checked) {
+            if (posAutoRefresh?.checked) {
                 aktualizujPosNahlad();
             }
         });
     }
 
-    // Inicializácia náhľadu
-    aktualizujNahlad();
+    // Inicializácia náhľadov
+    const initPreviews = function() {
+        // Zistiť aktívnu záložku
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab') || 'listok';
+
+        // Inicializovať príslušný náhľad podľa aktívnej záložky
+        if (tab === 'listok' && editor && preview) {
+            aktualizujNahlad();
+        } else if (tab === 'pos' && posTextarea && posPreview) {
+            aktualizujPosNahlad();
+        }
+    };
     
-    // Spustiť náhľad pri načítaní
-    aktualizujNahlad();
+    // Spustíme inicializáciu náhľadov hneď po načítaní DOM
+    initPreviews();
 
     // Lístok preview
     const listokTextarea = document.getElementById('sablona-listka');
@@ -454,9 +442,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const listokAutoRefresh = document.getElementById('preview-auto-refresh');
 
     function aktualizujNahladListka() {
-        if (!listokTextarea || !listokPreview) return;
+        if (!editor || !preview) return;
         
-        let html = listokTextarea.value;
+        let html = editor.value;
         
         // Demo dáta pre náhľad
         const demoData = {
@@ -474,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
             html = html.replace(new RegExp(`{${key}}`, 'g'), value);
         });
 
-        listokPreview.innerHTML = html;
+        preview.innerHTML = html;
     }
 
     // Event listeners pre lístok
@@ -496,5 +484,155 @@ document.addEventListener('DOMContentLoaded', function() {
     const terminalPreview = document.getElementById('pos-terminal-preview');
     const terminalAutoRefresh = document.getElementById('pos-preview-auto-refresh');
 
-    // ...rest of existing code...
+    // Separátne funkcie pre náhľad lístka a POS terminálu
+    function aktualizujNahladListka() {
+        const listokTextarea = document.getElementById('sablona-listka');
+        const listokPreview = document.getElementById('cl-listok-preview');
+        
+        if (!listokTextarea || !listokPreview) return;
+        
+        let html = listokTextarea.value;
+        
+        // Demo dáta pre náhľad lístka
+        const demoData = {
+            logo: '<img src="/test-logo.png" style="max-width:100%">',
+            datum: '01.03.2024',
+            cas: '14:30',
+            cislo_listka: '20240301-0001',
+            predajca: 'Test Predajca',
+            polozky: '<div class="polozka">Cestovný lístok základný<br>2x 1.20€ = 2.40€</div>',
+            suma: '2.40€'
+        };
+
+        // Nahradíme premenné
+        Object.entries(demoData).forEach(([key, value]) => {
+            html = html.replace(new RegExp(`{${key}}`, 'g'), value);
+        });
+
+        listokPreview.innerHTML = html;
+    }
+
+    function aktualizujNahladPOS() {
+        const posTextarea = document.getElementById('sablona-pos');
+        const posPreview = document.getElementById('cl-pos-preview');
+        
+        if (!posTextarea || !posPreview) return;
+        
+        let html = posTextarea.value;
+        
+        // Demo dáta pre POS náhľad
+        const posData = {
+            pos_header: `
+                <div class="pos-header">
+                    <div class="pos-logo">Predaj lístkov</div>
+                    <div class="pos-user">
+                        <div class="pos-user-avatar">JD</div>
+                        <span>John Doe</span>
+                    </div>
+                </div>
+            `,
+            pos_grid: `
+                <div class="pos-grid">
+                    <div class="pos-product">
+                        <div class="pos-product-name">Základný lístok</div>
+                        <div class="pos-product-price">1.20 €</div>
+                    </div>
+                    <div class="pos-product">
+                        <div class="pos-product-name">Zľavnený lístok</div>
+                        <div class="pos-product-price">0.60 €</div>
+                    </div>
+                </div>
+            `,
+            pos_cart: `
+                <div class="pos-cart">
+                    <div class="pos-cart-header">
+                        <h2>Košík</h2>
+                    </div>
+                    <div class="pos-cart-items">
+                        <div class="pos-cart-item">
+                            <div class="pos-item-info">
+                                <div class="pos-item-name">Základný lístok</div>
+                                <div class="pos-item-price">1.20 €</div>
+                            </div>
+                            <div class="pos-item-controls">
+                                <button class="pos-qty-btn">-</button>
+                                <span class="pos-item-qty">2</span>
+                                <button class="pos-qty-btn">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            pos_footer: `
+                <div class="pos-cart-footer">
+                    <div class="pos-total">
+                        <span>Spolu:</span>
+                        <span class="pos-total-amount">2.40 €</span>
+                    </div>
+                    <button class="pos-checkout">Dokončiť a tlačiť</button>
+                </div>
+            `
+        };
+
+        // Nahradíme POS premenné
+        Object.entries(posData).forEach(([key, value]) => {
+            html = html.replace(new RegExp(`{${key}}`, 'g'), value);
+        });
+
+        posPreview.innerHTML = html;
+    }
+
+    // Event listeners a inicializácia
+    document.addEventListener('DOMContentLoaded', function() {
+        // ...existing code...
+
+        // Inicializácia náhľadov
+        const activeTab = new URLSearchParams(window.location.search).get('tab');
+        
+        if (activeTab === 'pos') {
+            aktualizujNahladPOS();
+        } else if (activeTab === 'listok') {
+            aktualizujNahladListka();
+        }
+
+        // Event listeners pre POS náhľad
+        const posTextarea = document.getElementById('sablona-pos');
+        if (posTextarea) {
+            posTextarea.addEventListener('input', function() {
+                if (document.getElementById('pos-preview-auto-refresh')?.checked) {
+                    aktualizujNahladPOS();
+                }
+            });
+        }
+
+        document.getElementById('pos-preview-refresh')?.addEventListener('click', aktualizujNahladPOS);
+
+        // ...rest of existing code...
+    });
+
+    // POS Terminál preview
+    function aktualizujNahladPos() {
+        if (!posTextarea || !posPreview) return;
+        
+        let html = posTextarea.value;
+        
+        // Demo dáta pre POS
+        const posData = {
+            pos_header: `<div class="pos-header">...</div>`,
+            pos_grid: `<div class="pos-grid">...</div>`,
+            pos_cart: `<div class="pos-cart">...</div>`,
+            pos_footer: `<div class="pos-cart-footer">...</div>`
+        };
+
+        // Nahradíme premenné
+        Object.entries(posData).forEach(([key, value]) => {
+            html = html.replace(new RegExp(`{${key}}`, 'g'), value);
+        });
+
+        posPreview.innerHTML = html;
+    }
+
+    // Spustíme prvé načítanie náhľadu
+    aktualizujNahladListka();
+    aktualizujPosNahlad();
 });
