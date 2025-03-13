@@ -38,43 +38,50 @@ if (!defined('ABSPATH')) exit;
             <?php
             switch ($active_tab) {
                 case 'listok':
-                    do_settings_sections('cl_sekcia_listok');
                     ?>
-                    <div class="cl-editor-container">
-                        <!-- Live HTML Editor -->
-                        <div class="cl-editor-section">
-                            <h3>HTML šablóna lístka</h3>
-                            <div class="cl-editor-toolbar">
-                                <button type="button" class="button" data-tag="b">Tučné</button>
-                                <button type="button" class="button" data-tag="i">Kurzíva</button>
-                                <button type="button" class="button" data-tag="center">Zarovnať na stred</button>
-                                <button type="button" class="button" data-var="{logo}">Logo</button>
-                                <button type="button" class="button" data-var="{datum}">Dátum</button>
-                                <button type="button" class="button" data-var="{cas}">Čas</button>
-                                <button type="button" class="button" data-var="{cislo_listka}">Číslo lístka</button>
-                                <button type="button" class="button" data-var="{predajca}">Predajca</button>
+                    <div class="cl-grid-container">
+                        <!-- HTML Editor -->
+                        <div class="cl-grid-left">
+                            <div class="cl-editor-box">
+                                <h3>HTML šablóna lístka</h3>
+                                <div class="cl-editor-toolbar">
+                                    <button type="button" class="button" data-tag="b">Tučné</button>
+                                    <button type="button" class="button" data-tag="i">Kurzíva</button>
+                                    <button type="button" class="button" data-tag="center">Zarovnať na stred</button>
+                                    <button type="button" class="button" data-var="{logo}">Logo</button>
+                                    <button type="button" class="button" data-var="{datum}">Dátum</button>
+                                    <button type="button" class="button" data-var="{cas}">Čas</button>
+                                    <button type="button" class="button" data-var="{cislo_listka}">Číslo lístka</button>
+                                    <button type="button" class="button" data-var="{predajca}">Predajca</button>
+                                    <button type="button" class="button" data-var="{polozky}">Položky</button>
+                                    <button type="button" class="button" data-var="{suma}">Suma</button>
+                                </div>
+                                <textarea name="cl_nastavenia[sablona_listka]" id="sablona-listka" class="large-text code" rows="20"><?php 
+                                    echo esc_textarea(get_option('cl_nastavenia')['sablona_listka'] ?? $this->getDefaultTemplate()); 
+                                ?></textarea>
+                                <p class="description">
+                                    Použite premenné v zložených zátvorkách: {datum}, {cas}, {predajca}, {logo}, {polozky}, {suma}, {cislo_listka}<br>
+                                    Sekcia {polozky} bude automaticky nahradená položkami z predaja.
+                                </p>
                             </div>
-                            <textarea name="cl_nastavenia[sablona_listka]" id="sablona-listka" class="large-text code" rows="20"><?php 
-                                echo esc_textarea(get_option('cl_nastavenia')['sablona_listka'] ?? $this->getDefaultTemplate()); 
-                            ?></textarea>
-                            <p class="description">
-                                Použite premenné v zložených zátvorkách: {datum}, {cas}, {predajca}, {logo}, {polozky}, {suma}, {cislo_listka}<br>
-                                Sekcia {polozky} bude automaticky nahradená položkami z predaja.
-                            </p>
+                            <?php do_settings_sections('cl_sekcia_listok'); ?>
                         </div>
                         
-                        <!-- Live náhľad -->
-                        <div class="cl-preview-section">
-                            <h3>Náhľad lístka</h3>
-                            <div id="cl-listok-preview" class="cl-preview-window">
-                                <!-- JavaScript vloží náhľad -->
-                            </div>
-                            <div class="cl-preview-tools">
-                                <button type="button" class="button" id="preview-refresh">Obnoviť náhľad</button>
-                                <label>
-                                    <input type="checkbox" id="preview-auto-refresh" checked> 
-                                    Automatický náhľad
-                                </label>
+                        <!-- Náhľad -->
+                        <div class="cl-grid-right">
+                            <div class="cl-preview-box">
+                                <h3>Náhľad lístka</h3>
+                                <div id="cl-listok-preview" class="cl-preview-window">
+                                    <!-- Tu sa zobrazí náhľad -->
+                                </div>
+                                <div class="cl-preview-tools">
+                                    <button type="button" class="button" id="preview-refresh">Obnoviť náhľad</button>
+                                    <label>
+                                        <input type="checkbox" id="preview-auto-refresh" checked> 
+                                        Automatický náhľad
+                                    </label>
+                                </div>
+                                <p class="description">* Skutočný vzhľad sa môže mierne líšiť podľa typu tlačiarne</p>
                             </div>
                         </div>
                     </div>

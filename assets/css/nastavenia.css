@@ -139,7 +139,7 @@
 }
 
 .cl-editor-toolbar {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     padding: 10px;
     background: #f8f9fa;
     border: 1px solid #ddd;
@@ -162,11 +162,82 @@
 }
 
 .cl-preview-tools {
-    margin-top: 10px;
+    margin: 15px 0;
     text-align: center;
 }
 
 #sablona-listka {
+    width: 100%;
+    min-height: 300px;
     font-family: monospace;
+    font-size: 13px;
+    line-height: 1.4;
     resize: vertical;
+}
+
+.cl-preview-tools label {
+    margin-left: 15px;
+}
+
+/* Grid Layout pre nastavenia lístka */
+.cl-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.cl-grid-right {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+}
+
+.cl-preview-box {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.cl-preview-window {
+    width: 54mm;
+    min-height: 200px;
+    margin: 20px auto;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Vylepšenie popisu */
+.cl-preview-box .description {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin-top: 15px;
+}
+
+/* Responzívnosť */
+@media screen and (max-width: 1200px) {
+    .cl-grid-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .cl-grid-right {
+        position: static;
+    }
+}
+
+.cl-editor-box {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
 }
