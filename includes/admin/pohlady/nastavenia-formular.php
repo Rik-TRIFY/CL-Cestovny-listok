@@ -77,6 +77,7 @@ if (!defined('ABSPATH')) exit;
                                 </div>
                                 <div class="cl-preview-tools">
                                     <button type="button" class="button" id="preview-refresh">Obnoviť náhľad</button>
+                                    <button type="button" class="button button-primary" id="preview-print">Test tlače</button>
                                     <label>
                                         <input type="checkbox" id="preview-auto-refresh" checked> 
                                         Automatický náhľad

@@ -118,17 +118,64 @@ class Nastavenia {
     public function sanitizeNastavenia($input) {
         $sanitized = [];
         
-        // Zachováme HTML v šablóne lístka
+        // Zachováme kompletný HTML a CSS v šablóne lístka
         if (isset($input['sablona_listka'])) {
-            $sanitized['sablona_listka'] = wp_kses($input['sablona_listka'], [
-                'div' => ['class' => [], 'style' => []],
-                'span' => ['class' => [], 'style' => []],
-                'b' => [],
-                'i' => [],
-                'center' => [],
-                'img' => ['src' => [], 'alt' => [], 'style' => [], 'class' => []],
-                'br' => []
-            ]);
+            $allowed_html = array(
+                'div'    => array(
+                    'class' => true,
+                    'style' => true,
+                    'id'    => true,
+                    '*'     => true, // Povolí všetky atribúty
+                ),
+                'span'   => array(
+                    'class' => true,
+                    'style' => true,
+                    'id'    => true,
+                    '*'     => true,
+                ),
+                'b'      => array('*' => true),
+                'strong' => array('*' => true),
+                'i'      => array('*' => true),
+                'em'     => array('*' => true),
+                'br'     => array(),
+                'hr'     => array(),
+                'img'    => array(
+                    'src'    => true,
+                    'alt'    => true,
+                    'class'  => true,
+                    'id'     => true,
+                    'style'  => true,
+                    'width'  => true,
+                    'height' => true,
+                    '*'      => true,
+                ),
+                'a'      => array(
+                    'href'   => true,
+                    'class'  => true,
+                    'id'     => true,
+                    'target' => true,
+                    'style'  => true,
+                    '*'      => true,
+                ),
+                '*'      => array('*' => true), // Povolí všetky tagy a ich atribúty
+            );
+
+            // Použijeme menej reštriktívnu sanitizáciu
+            $content = wp_kses($input['sablona_listka'], $allowed_html);
+            
+            // Zachováme presné formátovanie
+            $content = stripslashes($content);
+            
+            // Opravíme escapovanie v CSS
+            $content = str_replace('&quot;', '"', $content);
+            $content = str_replace('&#039;', "'", $content);
+            
+            // Zachováme všetky CSS vlastnosti
+            $content = preg_replace_callback('/style="([^"]*)"/', function($matches) {
+                return 'style="' . str_replace(array('&quot;', '&#039;'), array('"', "'"), $matches[1]) . '"';
+            }, $content);
+            
+            $sanitized['sablona_listka'] = $content;
         }
         
         // Ostatné polia

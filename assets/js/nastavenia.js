@@ -66,7 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             mediaFrame.on('select', function() {
                 const attachment = mediaFrame.state().get('selection').first().toJSON();
-                const imgTag = `<img src="${attachment.url}" alt="" style="max-width:100%;height:auto;">`;
+                // Zachováme pôvodnú šírku obrázka ak je menšia ako 54mm (cca 204px pri 96dpi)
+                const width = attachment.width > 204 ? 204 : attachment.width;
+                const imgTag = `<img src="${attachment.url}" alt="" width="${width}" style="max-width:100%;height:auto;">`;
                 
                 // Vložíme tag na pozíciu kurzora
                 if (editor.selectionStart || editor.selectionStart === 0) {
@@ -119,6 +121,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Manuálne obnovenie náhľadu
     document.getElementById('preview-refresh')?.addEventListener('click', aktualizujNahlad);
+
+    // Test tlače
+    document.getElementById('preview-print')?.addEventListener('click', function() {
+        // Získame obsah z TinyMCE editora
+        const content = tinymce.get('sablona-listka').getContent();
+        let html = content;
+
+        // Nahradíme premenné testovacími dátami
+        const testData = {
+            logo: '<img src="/test-logo.png" style="max-width:100%">',
+            datum: '01.03.2024',
+            cas: '14:30',
+            cislo_listka: '20240301-0001',
+            predajca: 'Test Predajca',
+            polozky: `
+                <div class="polozka">
+                    <div>Cestovný lístok základný</div>
+                    <div>2x 1.20€ = 2.40€</div>
+                </div>
+                <div class="polozka">
+                    <div>Cestovný lístok zľavnený</div>
+                    <div>1x 0.60€ = 0.60€</div>
+                </div>
+            `,
+            suma: '3.00€'
+        };
+        
+        // Nahradíme premenné v HTML
+        Object.entries(testData).forEach(([key, value]) => {
+            html = html.replace(new RegExp(`{${key}}`, 'g'), value);
+        });
+
+        // Otvoríme nové okno pre tlač
+        const printWindow = window.open('', 'PRINT', 'height=600,width=800');
+        
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Test tlače lístka</title>
+                <style>
+                    @media print {
+                        body {
+                            width: 54mm;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        @page {
+                            size: 54mm auto;
+                            margin: 0;
+                        }
+                    }
+                    body {
+                        font-family: ${document.getElementById('cl_nastavenia[pismo]')?.value || 'Arial'};
+                        font-size: ${document.getElementById('cl_nastavenia[font_velkost]')?.value || '12'}px;
+                    }
+                    /* Štýly pre tlač */
+                    img { max-width: 100%; height: auto; }
+                    .polozka { margin: 5px 0; }
+                    .suma { font-weight: bold; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                ${html}
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Spustíme tlač po načítaní obsahu
+        setTimeout(function() {
+            printWindow.print();
+            printWindow.close();
+        }, 250);
+    });
 
     // Inicializácia náhľadu
     aktualizujNahlad();
