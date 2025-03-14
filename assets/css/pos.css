@@ -480,3 +480,298 @@
     --header-height: 60px;
     --sidebar-width: 320px;
 }
+
+/* POS Template - nové štýly pre šablónu */
+.pos-header {
+    height: var(--header-height, 50px);
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pos-logo {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.pos-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.pos-user-avatar {
+    width: 30px;
+    height: 30px;
+    background: var(--primary-color, #0073aa);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Obrazovky aplikácie */
+.pos-screen {
+    display: none;
+}
+
+.pos-screen.active {
+    display: block;
+}
+
+/* Grid s produktmi */
+.pos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 15px;
+}
+
+/* Tlačidlá produktov */
+.pos-product {
+    background: var(--button-background, white);
+    border-radius: 4px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.pos-product:hover {
+    background: var(--button-hover, #e9ecef);
+    transform: translateY(-2px);
+}
+
+.pos-product-name {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.pos-product-price {
+    color: var(--primary-color, #0073aa);
+}
+
+/* Košík */
+.pos-cart {
+    background: white;
+    margin: 0 15px 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.pos-cart-header {
+    background: var(--primary-color, #0073aa);
+    color: white;
+    padding: 10px 15px;
+}
+
+.pos-cart-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.pos-cart-items {
+    padding: 0 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.pos-cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.pos-item-info {
+    flex: 1;
+}
+
+.pos-item-name {
+    font-weight: 500;
+}
+
+.pos-item-price {
+    color: #666;
+    font-size: 14px;
+}
+
+.pos-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pos-item-qty {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.pos-qty-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: #eee;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pos-qty-btn:hover {
+    background: #ddd;
+}
+
+.pos-qty-btn.ok-btn {
+    background: #46b450;
+    color: white;
+}
+
+.pos-cart-footer {
+    padding: 15px;
+    border-top: 1px solid #eee;
+}
+
+.pos-total {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* Tlačidlo košíka */
+.pos-cart-button {
+    display: block;
+    width: calc(100% - 30px);
+    margin: 0 15px 15px 15px;
+    padding: 12px;
+    background: var(--cart-background, #0073aa);
+    color: var(--cart-text, white);
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.pos-cart-button:hover {
+    background: #005d87;
+}
+
+/* Posledné pridané položky */
+.pos-recent-items {
+    background: white;
+    margin: 0 15px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+}
+
+.pos-recent-items h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.pos-recent-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.pos-recent-item:last-child {
+    border-bottom: none;
+}
+
+/* Tlačidlá akcie */
+.pos-cart-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.pos-back-btn {
+    flex: 1;
+    padding: 15px;
+    background: #eee;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.pos-checkout-btn {
+    flex: 2;
+    padding: 15px;
+    background: #46b450;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.pos-back-button {
+    display: inline-block;
+    padding: 8px 15px;
+    margin-bottom: 15px;
+    background: #eee;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.pos-back-button:hover {
+    background: #ddd;
+}
+
+/* Responzívnosť */
+@media (max-width: 768px) {
+    .pos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .pos-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Dynamické CSS premenné */
+:root {
+    --pos-bg-color: #f0f0f0;
+    --pos-button-color: #ffffff;
+    --pos-text-color: #000000;
+    --pos-cart-color: #2271b1;
+    --primary-color: var(--pos-cart-color, #2271b1);
+    --primary-hover: var(--pos-cart-color-hover, #135e96);
+    --secondary-color: var(--pos-bg-color, #f5f5f5);
+    --text-color: var(--pos-text-color, #333);
+    --border-color: #e0e0e0;
+    --header-height: 50px;
+}

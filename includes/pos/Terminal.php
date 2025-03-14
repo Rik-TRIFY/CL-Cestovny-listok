@@ -15,17 +15,17 @@ declare(strict_types=1);
 namespace CL\POS;
 
 class Terminal {
-    private \CL\jadro\Databaza $databaza;
-    private \CL\jadro\SpravcaNastaveni $spravca;
+    private \CL\Jadro\Databaza $databaza;
+    private \CL\Jadro\SpravcaNastaveni $spravca;
 
     public function __construct() {
-        $this->databaza = new \CL\jadro\Databaza();
-        $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
-        add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'pridajDoKosika']);
-        add_action('wp_ajax_cl_odstran_z_kosika', [$this, 'odstranZKosika']);
-        add_action('wp_ajax_cl_dokonci_predaj', [$this, 'dokonciPredaj']);
+        $this->databaza = new \CL\Jadro\Databaza();
+        $this->spravca = \CL\Jadro\SpravcaNastaveni::ziskajInstanciu();
+        add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'ajaxPridajDoKosika']);
+        add_action('wp_ajax_cl_dokoncit_predaj', [$this, 'ajaxDokoncitPredaj']);
+        add_action('wp_ajax_cl_nacitaj_predaje', [$this, 'ajaxNacitajPosledne']);
+        add_action('wp_ajax_cl_tlacit_listok', [$this, 'ajaxTlacitListok']);
         add_action('wp_enqueue_scripts', [$this, 'pridajAssets']);
-        add_action('wp_ajax_cl_dokoncit_predaj', [$this, 'dokoncitPredaj']);
     }
 
     public function pridajAssets(): void {
@@ -40,16 +40,94 @@ class Terminal {
 
     public function zobrazTerminal(): void {
         if (!is_user_logged_in()) {
-            wp_die('Nemáte dostatočné oprávnenia na zobrazenie terminálu.');
+            echo '<p class="cl-error">Pre prístup k POS terminálu sa musíte prihlásiť.</p>';
+            return;
         }
         
-        $predajca = wp_get_current_user();
+        // Získanie prihlaseného používateľa
+        $current_user = wp_get_current_user();
+        $user_initials = mb_substr($current_user->display_name, 0, 1);
         
-        // Načítame nastavenia z našej DB
-        $layout = $this->spravca->nacitaj('pos_layout', 'grid');
-        $columns = $this->spravca->nacitaj('pos_columns', 4);
+        // Získanie dostupných typov lístkov
+        $listky = $this->databaza->nacitaj(
+            "SELECT * FROM `{$GLOBALS['wpdb']->prefix}cl_typy_listkov` 
+             WHERE aktivny = 1 
+             ORDER BY poradie ASC, nazov ASC"
+        );
         
-        require CL_INCLUDES_DIR . 'pos/pohlady/terminal.php';
+        // Načítanie a spracovanie šablóny
+        $sablona = $this->nacitajSablonuTerminalu();
+        
+        // Nahradzovanie placeholderov
+        $app_name = $this->spravca->nacitaj('pos_app_name', 'POSka - Cestovné lístky');
+        $recently_added_label = $this->spravca->nacitaj('pos_recently_added_label', 'Naposledy pridané');
+        $goto_cart_button = $this->spravca->nacitaj('pos_goto_cart_button', 'Prejsť do košíka');
+        $cart_title = $this->spravca->nacitaj('pos_cart_title', 'Košík');
+        $total_sum_label = $this->spravca->nacitaj('pos_total_sum_label', 'SUMA CELKOM');
+        $back_button = $this->spravca->nacitaj('pos_back_button', 'Vrátiť späť');
+        $checkout_button = $this->spravca->nacitaj('pos_checkout_button', 'ULOŽIŤ a TLAČ');
+        
+        // Nahradenie placeholderov v šablóne skutočnými údajmi
+        $sablona = str_replace(
+            [
+                '{user_name}',
+                '{user_initials}',
+                '{ticket_buttons}',
+                '{app_name}',
+                '{recently_added_label}',
+                '{goto_cart_button}',
+                '{cart_title}',
+                '{total_sum_label}',
+                '{back_button}',
+                '{checkout_button}'
+            ],
+            [
+                esc_html($current_user->display_name),
+                esc_html($user_initials),
+                $this->generujTlacidlaListkov($listky),
+                esc_html($app_name),
+                esc_html($recently_added_label),
+                esc_html($goto_cart_button),
+                esc_html($cart_title),
+                esc_html($total_sum_label),
+                esc_html($back_button),
+                esc_html($checkout_button)
+            ],
+            $sablona
+        );
+        
+        echo $sablona;
+    }
+
+    private function nacitajSablonuTerminalu(): string {
+        $cestaKSablonam = CL_PLUGIN_DIR . 'sablony/terminal.html';
+        
+        if (file_exists($cestaKSablonam)) {
+            return file_get_contents($cestaKSablonam);
+        }
+        
+        // Fallback ak súbor neexistuje
+        return '<p class="cl-error">Šablóna terminálu sa nenašla.</p>';
+    }
+
+    private function generujTlacidlaListkov(array $listky): string {
+        $html = '';
+        
+        foreach ($listky as $listok) {
+            $html .= sprintf(
+                '<div class="cl-terminal-btn cl-ticket-btn" data-id="%d" data-nazov="%s" data-cena="%s">
+                    <span class="nazov">%s</span>
+                    <span class="cena">%s €</span>
+                </div>',
+                $listok->id,
+                esc_attr($listok->nazov),
+                number_format((float)$listok->cena, 2),
+                esc_html($listok->nazov),
+                number_format((float)$listok->cena, 2)
+            );
+        }
+        
+        return $html;
     }
 
     public function pridajDoKosika(): void {
@@ -267,5 +345,255 @@ class Terminal {
     private function generujHTML(array $items): string {
         // TODO: Generovanie HTML pre tlač
         return '<h1>Test tlače</h1>';
+    }
+
+    public function ajaxPridajDoKosika(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nedostatočné oprávnenia');
+            return;
+        }
+        
+        $typ_listka_id = (int)$_POST['typ_listka_id'];
+        $pocet = max(1, (int)$_POST['pocet']);
+        
+        $listok = $this->databaza->nacitaj(
+            "SELECT * FROM `CL-typy_listkov` WHERE id = %d AND aktivny = TRUE",
+            [$typ_listka_id]
+        );
+        
+        if (empty($listok)) {
+            wp_send_json_error('Neplatný lístok');
+            return;
+        }
+        
+        wp_send_json_success([
+            'id' => $listok[0]['id'],
+            'nazov' => $listok[0]['nazov'],
+            'pocet' => $pocet,
+            'cena' => (float)$listok[0]['cena']
+        ]);
+    }
+
+    public function ajaxDokoncitPredaj(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Nie ste prihlásený');
+            return;
+        }
+        
+        // Získanie dát z POST
+        $polozky = isset($_POST['polozky']) ? json_decode(stripslashes($_POST['polozky']), true) : [];
+        
+        if (empty($polozky)) {
+            wp_send_json_error('Košík je prázdny');
+            return;
+        }
+        
+        global $wpdb;
+        
+        // Generovanie unikátneho čísla lístka (RRRRMMDD-XXXX)
+        $prefix = date('Ymd');
+        $suffix = 1;
+        
+        // Nájdenie posledného čísla lístka s aktuálnym dátumom
+        $last_number = $wpdb->get_var($wpdb->prepare(
+            "SELECT MAX(CAST(SUBSTRING_INDEX(cislo_predaja, '-', -1) AS UNSIGNED)) 
+             FROM `{$wpdb->prefix}cl_predaj` 
+             WHERE cislo_predaja LIKE %s",
+            $prefix . '-%'
+        ));
+        
+        if ($last_number) {
+            $suffix = intval($last_number) + 1;
+        }
+        
+        $cislo_listka = sprintf('%s-%04d', $prefix, $suffix);
+        
+        // Výpočet celkovej sumy
+        $celkova_suma = 0;
+        foreach ($polozky as $polozka) {
+            $celkova_suma += floatval($polozka['cena']) * intval($polozka['pocet']);
+        }
+        
+        try {
+            // Začiatok transakcie
+            $wpdb->query('START TRANSACTION');
+            
+            // Vloženie hlavičky predaja
+            $wpdb->insert(
+                $wpdb->prefix . 'cl_predaj',
+                [
+                    'cislo_predaja' => $cislo_listka,
+                    'predajca_id' => get_current_user_id(),
+                    'celkova_suma' => $celkova_suma,
+                    'datum_predaja' => current_time('mysql'),
+                    'data_listka' => json_encode([
+                        'polozky' => $polozky,
+                        'hlavicka' => get_option('cl_hlavicka'),
+                        'paticka' => get_option('cl_paticka'),
+                        'logo_url' => get_option('cl_logo_url')
+                    ])
+                ]
+            );
+            
+            $predaj_id = $wpdb->insert_id;
+            
+            // Vloženie položiek predaja
+            foreach ($polozky as $polozka) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'cl_polozky_predaja',
+                    [
+                        'predaj_id' => $predaj_id,
+                        'typ_listka_id' => intval($polozka['id']),
+                        'pocet' => intval($polozka['pocet']),
+                        'cena_za_kus' => floatval($polozka['cena'])
+                    ]
+                );
+            }
+            
+            // Vygenerovanie HTML lístka
+            $html_listok = $this->generujHtmlListok([
+                'cislo_predaja' => $cislo_listka,
+                'datum_predaja' => current_time('mysql'),
+                'predajca' => wp_get_current_user()->display_name,
+                'polozky' => $polozky,
+                'celkova_suma' => $celkova_suma
+            ]);
+            
+            // Uloženie HTML lístka
+            $subor_cesta = CL_PREDAJ_DIR . 'listok-' . $cislo_listka . '.html';
+            file_put_contents($subor_cesta, $html_listok);
+            
+            // Commit transakcie
+            $wpdb->query('COMMIT');
+            
+            // Logger
+            $spravca_log = new \CL\Jadro\SpravcaSuborov();
+            $spravca_log->zapisDoLogu('PREDAJ', [
+                'cislo_predaja' => $cislo_listka,
+                'predajca_id' => get_current_user_id(),
+                'celkova_suma' => $celkova_suma,
+                'pocet_poloziek' => count($polozky)
+            ]);
+            
+            wp_send_json_success([
+                'cislo_listka' => $cislo_listka,
+                'url_listka' => site_url('/predaj/listok-' . $cislo_listka . '.html')
+            ]);
+            
+        } catch (\Exception $e) {
+            // Rollback v prípade chyby
+            $wpdb->query('ROLLBACK');
+            
+            // Logger
+            $spravca_log = new \CL\Jadro\SpravcaSuborov();
+            $spravca_log->zapisDoLogu('PREDAJ_ERROR', [
+                'error' => $e->getMessage(),
+                'data' => [
+                    'polozky' => $polozky,
+                    'celkova_suma' => $celkova_suma
+                ]
+            ]);
+            
+            wp_send_json_error('Chyba pri ukladaní predaja: ' . $e->getMessage());
+        }
+    }
+
+    private function generujHtmlListok(array $data): string {
+        $generator = new \CL\Listky\Generator();
+        return $generator->generujListok($data);
+    }
+
+    public function ajaxNacitajPosledne(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Nie ste prihlásený');
+            return;
+        }
+        
+        global $wpdb;
+        
+        // Načítanie posledných 3 predajov aktuálneho používateľa
+        $predaje = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT p.*, COUNT(pp.id) as pocet_poloziek 
+                 FROM `{$wpdb->prefix}cl_predaj` p
+                 LEFT JOIN `{$wpdb->prefix}cl_polozky_predaja` pp ON p.id = pp.predaj_id
+                 WHERE p.predajca_id = %d AND p.storno = 0
+                 GROUP BY p.id
+                 ORDER BY p.datum_predaja DESC
+                 LIMIT 3",
+                get_current_user_id()
+            ),
+            ARRAY_A
+        );
+        
+        if (!$predaje) {
+            wp_send_json_success(['predaje' => []]);
+            return;
+        }
+        
+        // Získanie detailov pre každý predaj
+        foreach ($predaje as &$predaj) {
+            $predaj['polozky'] = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT pp.*, tl.nazov 
+                     FROM `{$wpdb->prefix}cl_polozky_predaja` pp
+                     LEFT JOIN `{$wpdb->prefix}cl_typy_listkov` tl ON pp.typ_listka_id = tl.id
+                     WHERE pp.predaj_id = %d",
+                    $predaj['id']
+                ),
+                ARRAY_A
+            );
+            
+            // Formátovanie dátumu
+            $predaj['datum_format'] = wp_date('d.m.Y H:i', strtotime($predaj['datum_predaja']));
+        }
+        
+        wp_send_json_success(['predaje' => $predaje]);
+    }
+
+    public function ajaxTlacitListok(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Nie ste prihlásený');
+            return;
+        }
+        
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        
+        if (!$id) {
+            wp_send_json_error('Neplatný identifikátor predaja');
+            return;
+        }
+        
+        global $wpdb;
+        
+        // Získanie predaja
+        $predaj = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}cl_predaj` WHERE id = %d",
+                $id
+            ),
+            ARRAY_A
+        );
+        
+        if (!$predaj) {
+            wp_send_json_error('Predaj sa nenašiel');
+            return;
+        }
+        
+        // URL na HTML lístok
+        $url_listka = site_url('/predaj/listok-' . $predaj['cislo_predaja'] . '.html');
+        
+        wp_send_json_success([
+            'cislo_listka' => $predaj['cislo_predaja'],
+            'url_listka' => $url_listka
+        ]);
     }
 }

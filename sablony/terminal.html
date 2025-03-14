@@ -351,75 +351,23 @@
 <body>
     <!-- Header - nižší -->
     <div class="pos-header">
-        <div class="pos-logo">POSka - Cestovné lístky</div>
+        <div class="pos-logo">{app_name}</div>
         <div class="pos-user">
-            <div class="pos-user-avatar">JD</div>
-            <span>John Doe</span>
+            <div class="pos-user-avatar">{user_initials}</div>
+            <span>{user_name}</span>
         </div>
     </div>
 
     <!-- Obrazovka terminálu - hlavná -->
     <div id="terminal-screen" class="pos-screen active">
-        <!-- Grid pre 9 lístkov (3x3) -->
+        <!-- Grid pre lístky -->
         <div class="pos-grid">
-            <!-- Lístok 1 -->
-            <div class="pos-product" data-id="1">
-                <div class="pos-product-name">Základný lístok</div>
-                <div class="pos-product-price">1.20 €</div>
-            </div>
-            
-            <!-- Lístok 2 -->
-            <div class="pos-product" data-id="2">
-                <div class="pos-product-name">Zľavnený lístok</div>
-                <div class="pos-product-price">0.60 €</div>
-            </div>
-            
-            <!-- Lístok 3 -->
-            <div class="pos-product" data-id="3">
-                <div class="pos-product-name">Študentský lístok</div>
-                <div class="pos-product-price">0.40 €</div>
-            </div>
-            
-            <!-- Lístok 4 -->
-            <div class="pos-product" data-id="4">
-                <div class="pos-product-name">Seniorský lístok</div>
-                <div class="pos-product-price">0.30 €</div>
-            </div>
-            
-            <!-- Lístok 5 -->
-            <div class="pos-product" data-id="5">
-                <div class="pos-product-name">Detský lístok</div>
-                <div class="pos-product-price">0.50 €</div>
-            </div>
-            
-            <!-- Lístok 6 -->
-            <div class="pos-product" data-id="6">
-                <div class="pos-product-name">Týždenný lístok</div>
-                <div class="pos-product-price">8.00 €</div>
-            </div>
-            
-            <!-- Lístok 7 -->
-            <div class="pos-product" data-id="7">
-                <div class="pos-product-name">Mesačný lístok</div>
-                <div class="pos-product-price">25.00 €</div>
-            </div>
-            
-            <!-- Lístok 8 -->
-            <div class="pos-product" data-id="8">
-                <div class="pos-product-name">ZŤP lístok</div>
-                <div class="pos-product-price">0.20 €</div>
-            </div>
-            
-            <!-- Lístok 9 -->
-            <div class="pos-product" data-id="9">
-                <div class="pos-product-name">Rodinný lístok</div>
-                <div class="pos-product-price">3.00 €</div>
-            </div>
+            {ticket_buttons}
         </div>
 
         <!-- Posledné pridané položky -->
         <div class="pos-recent-items">
-            <h3>Naposledy pridané</h3>
+            <h3>{recently_added_label}</h3>
             <div id="recent-items-container">
                 <!-- Tu sa budú zobrazovať posledné 2 pridané položky -->
             </div>
@@ -427,7 +375,7 @@
 
         <!-- Tlačidlo košíka cez celú šírku -->
         <button id="go-to-cart" class="pos-cart-button">
-            Prejsť do košíka (<span id="cart-item-count">0</span>)
+            {goto_cart_button} (<span id="cart-item-count">0</span>)
         </button>
     </div>
 
@@ -435,11 +383,11 @@
     <div id="cart-screen" class="pos-screen">
         <div class="pos-cart">
             <button id="back-to-terminal" class="pos-back-button">
-                &larr; Späť na výber lístkov
+                &larr; {back_button}
             </button>
             
             <div class="pos-cart-header">
-                <h2>Košík</h2>
+                <h2>{cart_title}</h2>
             </div>
             
             <div class="pos-cart-items" id="cart-items-container">
@@ -448,13 +396,13 @@
             
             <div class="pos-cart-footer">
                 <div class="pos-total">
-                    <span>SUMA CELKOM:</span>
+                    <span>{total_sum_label}:</span>
                     <span id="cart-total-amount">0.00 €</span>
                 </div>
                 
                 <div class="pos-cart-actions">
-                    <button id="back-to-terminal-btn" class="pos-back-btn">Vrátiť späť</button>
-                    <button id="checkout-btn" class="pos-checkout-btn">ULOŽIŤ a TLAČ</button>
+                    <button id="back-to-terminal-btn" class="pos-back-btn">{back_button}</button>
+                    <button id="checkout-btn" class="pos-checkout-btn">{checkout_button}</button>
                 </div>
             </div>
         </div>

@@ -1,115 +1,284 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Hlavný objekt košíka
     const kosik = {
-        polozky: [],
+        polozky: {},
+        poslednePolozky: [],
         
+        /**
+         * Pridá položku do košíka
+         */
         pridajPolozku(id, nazov, cena) {
-            // Namiesto zvyšovania počtu existujúcej položky zlúčime položky pri zobrazení
-            this.polozky.push({ id, nazov, cena, pocet: 1 });
+            if (!this.polozky[id]) {
+                this.polozky[id] = { id, nazov, cena: parseFloat(cena), pocet: 0 };
+            }
+            this.polozky[id].pocet++;
+            
+            // Pridanie do posledných položiek
+            this.pridajDoPoslednych(id, nazov, parseFloat(cena));
+            
             this.aktualizujZobrazenie();
+            
+            // Uložíme do localStorage
+            this.ulozDoStorage();
         },
         
+        /**
+         * Odstráni položku z košíka
+         */
         odstranPolozku(id) {
-            this.polozky = this.polozky.filter(p => p.id !== id);
-            this.aktualizujZobrazenie();
-        },
-        
-        zmenPocet(id, novyPocet) {
-            const polozka = this.polozky.find(p => p.id === id);
-            if (polozka) {
-                polozka.pocet = Math.max(1, novyPocet);
+            if (this.polozky[id] && this.polozky[id].pocet > 0) {
+                this.polozky[id].pocet--;
+                if (this.polozky[id].pocet === 0) {
+                    delete this.polozky[id];
+                }
                 this.aktualizujZobrazenie();
+                this.ulozDoStorage();
             }
         },
         
-        aktualizujZobrazenie() {
-            const kontajner = document.getElementById('polozky-kosika');
-            let html = '';
+        /**
+         * Pridá položku do zoznamu posledných položiek
+         */
+        pridajDoPoslednych(id, nazov, cena) {
+            // Odstránenie položky z posledných ak už tam je
+            this.poslednePolozky = this.poslednePolozky.filter(polozka => polozka.id !== id);
             
-            // Zlúčime rovnaké položky
-            const zlucenePolozky = this.polozky.reduce((acc, polozka) => {
-                const existujuca = acc.find(p => p.id === polozka.id);
-                if (existujuca) {
-                    existujuca.pocet += polozka.pocet;
-                } else {
-                    acc.push({ ...polozka });
-                }
-                return acc;
-            }, []);
+            // Pridanie na začiatok zoznamu
+            this.poslednePolozky.unshift({ id, nazov, cena });
             
-            zlucenePolozky.forEach(polozka => {
-                const sumaCelkom = polozka.cena * polozka.pocet;
-                html += `
-                    <div class="polozka" data-id="${polozka.id}">
-                        <span class="nazov">${polozka.nazov}</span>
-                        <div class="mnozstvo">
-                            <span class="pocet">${polozka.pocet}x</span>
-                        </div>
-                        <span class="cena">${sumaCelkom.toFixed(2)} €</span>
-                        <button class="odstranit">&times;</button>
-                    </div>
-                `;
-            });
+            // Ponechanie len posledných 2 položiek
+            this.poslednePolozky = this.poslednePolozky.slice(0, 2);
             
-            kontajner.innerHTML = html;
-            
-            // Celková suma zo zlúčených položiek
-            const celkovaSuma = zlucenePolozky.reduce((sum, item) => 
-                sum + (item.cena * item.pocet), 0);
-            document.getElementById('celkova-suma').textContent = celkovaSuma.toFixed(2);
+            // Aktualizácia zobrazenia posledných položiek
+            this.aktualizujPoslednePolozky();
         },
         
+        /**
+         * Aktualizuje zobrazenie posledných položiek
+         */
+        aktualizujPoslednePolozky() {
+            const kontajner = document.getElementById('recent-items-container');
+            kontajner.innerHTML = '';
+            
+            if (this.poslednePolozky.length === 0) {
+                kontajner.innerHTML = '<div class="pos-recent-item">Zatiaľ neboli pridané žiadne položky</div>';
+                return;
+            }
+            
+            this.poslednePolozky.forEach(polozka => {
+                const element = document.createElement('div');
+                element.className = 'pos-recent-item';
+                element.innerHTML = `
+                    <div>${polozka.nazov}</div>
+                    <div>${polozka.cena.toFixed(2)} €</div>
+                `;
+                kontajner.appendChild(element);
+            });
+        },
+        
+        /**
+         * Renderuje položky v košíku
+         */
+        renderujPolozkyKosika() {
+            const kontajner = document.getElementById('cart-items-container');
+            kontajner.innerHTML = '';
+            
+            if (Object.keys(this.polozky).length === 0) {
+                kontajner.innerHTML = '<div style="padding:20px;text-align:center;">Košík je prázdny</div>';
+                document.getElementById('checkout-btn').disabled = true;
+                return;
+            }
+            
+            document.getElementById('checkout-btn').disabled = false;
+            
+            // Renderovanie každej položky
+            Object.values(this.polozky).forEach(polozka => {
+                const element = document.createElement('div');
+                element.className = 'pos-cart-item';
+                element.innerHTML = `
+                    <div class="pos-item-info">
+                        <div class="pos-item-name">${polozka.nazov}</div>
+                        <div class="pos-item-price">${(polozka.cena * polozka.pocet).toFixed(2)} €</div>
+                    </div>
+                    <div class="pos-item-controls">
+                        <button class="pos-qty-btn minus" data-id="${polozka.id}">-</button>
+                        <span class="pos-item-qty">${polozka.pocet}</span>
+                        <button class="pos-qty-btn plus" data-id="${polozka.id}">+</button>
+                        <button class="pos-qty-btn ok-btn" data-id="${polozka.id}">OK</button>
+                    </div>
+                `;
+                kontajner.appendChild(element);
+            });
+            
+            // Pridanie event listenerov pre tlačidlá
+            document.querySelectorAll('.pos-qty-btn.minus').forEach(btn => {
+                btn.addEventListener('click', () => this.odstranPolozku(btn.dataset.id));
+            });
+            
+            document.querySelectorAll('.pos-qty-btn.plus').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const polozka = this.polozky[id];
+                    this.pridajPolozku(id, polozka.nazov, polozka.cena);
+                });
+            });
+            
+            document.querySelectorAll('.pos-qty-btn.ok-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Animácia potvrdenia
+                    this.textContent = '✓';
+                    this.style.backgroundColor = '#46b450';
+                    this.style.color = 'white';
+                    
+                    setTimeout(() => {
+                        this.textContent = 'OK';
+                        this.style.backgroundColor = '';
+                        this.style.color = '';
+                    }, 1000);
+                });
+            });
+            
+            // Aktualizácia celkovej sumy
+            this.aktualizujCelkovuSumu();
+        },
+        
+        /**
+         * Aktualizuje celkovú sumu v košíku
+         */
+        aktualizujCelkovuSumu() {
+            const total = Object.values(this.polozky).reduce(
+                (sum, item) => sum + (item.cena * item.pocet), 0
+            );
+            document.getElementById('cart-total-amount').textContent = total.toFixed(2) + ' €';
+        },
+        
+        /**
+         * Aktualizuje zobrazenie počtu položiek a uloženie dát
+         */
+        aktualizujZobrazenie() {
+            const celkovyPocet = Object.values(this.polozky).reduce((sum, item) => sum + item.pocet, 0);
+            document.getElementById('cart-item-count').textContent = celkovyPocet;
+            this.renderujPolozkyKosika();
+        },
+        
+        /**
+         * Uloží košík do localStorage
+         */
+        ulozDoStorage() {
+            localStorage.setItem('posCart', JSON.stringify(this.polozky));
+        },
+        
+        /**
+         * Načíta košík z localStorage
+         */
+        nacitajZoStorage() {
+            try {
+                const ulozenyKosik = localStorage.getItem('posCart');
+                if (ulozenyKosik) {
+                    this.polozky = JSON.parse(ulozenyKosik);
+                    this.aktualizujZobrazenie();
+                }
+            } catch (e) {
+                console.error('Chyba pri načítaní košíka:', e);
+            }
+        },
+        
+        /**
+         * Dokončí predaj a vytlačí lístok
+         */
         dokonciPredaj() {
-            if (this.polozky.length === 0) {
+            if (Object.keys(this.polozky).length === 0) {
                 alert('Košík je prázdny');
                 return;
             }
             
-            fetch(ajaxurl, {
+            // Transformujeme položky do formátu, ktorý očakáva backend
+            const polozkyPreBackend = Object.values(this.polozky).map(polozka => ({
+                id: polozka.id,
+                nazov: polozka.nazov,
+                cena: polozka.cena,
+                pocet: polozka.pocet
+            }));
+            
+            // AJAX volanie na backend
+            fetch(cl_pos.ajaxurl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    action: 'cl_dokonci_predaj',
+                    action: 'cl_dokoncit_predaj',
                     nonce: cl_pos.nonce,
-                    polozky: JSON.stringify(this.polozky)
+                    polozky: JSON.stringify(polozkyPreBackend)
                 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    this.tlacListok(data.data.html_listok);
-                    this.polozky = [];
+                    // Otvoríme okno pre tlač lístka
+                    this.tlacListok(data.data.cislo_listka, data.data.url_listka);
+                    
+                    // Vyčistíme košík
+                    this.polozky = {};
                     this.aktualizujZobrazenie();
+                    this.ulozDoStorage();
+                    
+                    // Vrátime sa na hlavnú obrazovku
+                    document.getElementById('cart-screen').classList.remove('active');
+                    document.getElementById('terminal-screen').classList.add('active');
                 } else {
-                    alert('Chyba: ' + data.data);
+                    alert('Chyba pri dokončení predaja: ' + data.data);
                 }
+            })
+            .catch(error => {
+                console.error('Chyba pri dokončení predaja:', error);
+                alert('Došlo k chybe pri dokončení predaja. Skúste to znova.');
             });
         },
         
-        tlacListok(html) {
-            const w = window.open('', '', 'width=400,height=600');
-            w.document.write(html);
-            w.document.close();
-            w.print();
-            setTimeout(() => w.close(), 1000);
+        /**
+         * Otvorí okno pre tlač lístka
+         */
+        tlacListok(cisloListka, url) {
+            const w = window.open(url, 'PRINT_TICKET', 'width=400,height=600');
+            if (w) {
+                setTimeout(() => {
+                    w.print();
+                    setTimeout(() => w.close(), 1000);
+                }, 500);
+            } else {
+                alert('Povoľte vyskakovacie okná pre tlač lístka');
+                // Otvoríme lístok v novej karte, ak je blokovač vyskakovacích okien aktívny
+                window.open(url, '_blank');
+            }
         }
     };
     
-    // Event listeners pre tlačidlá lístkov
-    document.querySelectorAll('.cl-listok').forEach(btn => {
-        btn.addEventListener('click', function() {
+    // Inicializácia košíka
+    kosik.nacitajZoStorage();
+    kosik.aktualizujPoslednePolozky();
+    
+    // Event listener pre dokončenie predaja
+    document.getElementById('checkout-btn').addEventListener('click', function() {
+        kosik.dokonciPredaj();
+    });
+    
+    // Event listenery pre produktové tlačidlá
+    document.querySelectorAll('.pos-product').forEach(produkt => {
+        produkt.addEventListener('click', function() {
             const id = this.dataset.id;
-            const nazov = this.dataset.nazov;
-            const cena = parseFloat(this.dataset.cena);
+            const nazov = this.querySelector('.pos-product-name').textContent;
+            const cena = parseFloat(this.querySelector('.pos-product-price').textContent);
             
             kosik.pridajPolozku(id, nazov, cena);
             
             // Vizuálna spätná väzba pri kliknutí
-            this.classList.add('kliknute');
-            setTimeout(() => this.classList.remove('kliknute'), 200);
+            this.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
         });
     });
     
-    // Event listeners...
+    // Event listenery pre prepínanie obrazoviek (už implementované v HTML)
 });
