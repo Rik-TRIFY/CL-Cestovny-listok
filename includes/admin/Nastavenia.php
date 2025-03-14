@@ -843,6 +843,29 @@ class Nastavenia {
         <?php
     }
 
+    public function zobrazInputListokSablona(): void {
+        $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
+        
+        // Načítame predvolenú šablónu zo súboru
+        $predvolena_sablona = file_get_contents(CL_PLUGIN_DIR . 'sablony/listok.html');
+        
+        // Načítame uloženú šablónu z DB, ak existuje
+        $ulozena_sablona = $spravca->nacitaj('listok_sablona');
+        
+        // Použijeme uloženú šablónu ak existuje, inak predvolenú
+        $sablona = !empty($ulozena_sablona) ? $ulozena_sablona : $predvolena_sablona;
+        ?>
+        <textarea id="sablona-listka" name="cl_nastavenia[listok_sablona]" rows="20" class="large-text code"><?php 
+            echo esc_textarea($sablona); 
+        ?></textarea>
+        <p class="description">
+            Ak necháte prázdne, použije sa predvolená šablóna zo súboru sablony/listok.html<br>
+            Dostupné premenné: {datum}, {cas}, {predajca}, {logo}, {polozky}, {celkova_suma}, {cislo_listka}, {hlavicka}, {paticka}
+        </p>
+        <button type="button" class="button" id="reset-template">Obnoviť predvolenú šablónu</button>
+        <?php
+    }
+
     private function getDefaultTemplate(): string {
         return <<<HTML
 <div class="listok">

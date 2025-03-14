@@ -4,20 +4,36 @@ declare(strict_types=1);
 namespace CL\jadro;
 
 class Databaza {
-    private $db_primary;
-    private $db_backup;
-    
+    private \wpdb $wpdb;
+
     public function __construct() {
         global $wpdb;
-        $this->db_primary = $wpdb;
+        $this->wpdb = $wpdb;
+    }
+
+    /**
+     * Načíta dáta z databázy
+     *
+     * @param string $query SQL dotaz s možnosťou použitia placeholderov
+     * @param array $params Parametre pre SQL dotaz
+     * @param string $output_type Typ výstupných dát (ARRAY_A, OBJECT)
+     * @return array Výsledky dotazu
+     */
+    public function nacitaj(string $query, array $params = [], string $output_type = ARRAY_A): array {
+        global $wpdb;
         
-        // Inicializácia záložnej DB
-        $this->db_backup = new \wpdb(
-            defined('DB_BACKUP_USER') ? DB_BACKUP_USER : DB_USER,
-            defined('DB_BACKUP_PASSWORD') ? DB_BACKUP_PASSWORD : DB_PASSWORD,
-            defined('DB_BACKUP_NAME') ? DB_BACKUP_NAME : DB_NAME,
-            defined('DB_BACKUP_HOST') ? DB_BACKUP_HOST : DB_HOST
-        );
+        // Úprava dotazu - nahradenie CL- prefixu s prefixom WordPress
+        $query = str_replace('`CL-', '`' . $wpdb->prefix . 'cl_', $query);
+        
+        // Pripravíme dotaz s parametrami
+        if (!empty($params)) {
+            $query = $wpdb->prepare($query, $params);
+        }
+        
+        // Získame dáta
+        $results = $wpdb->get_results($query, $output_type);
+        
+        return $results !== null ? $results : [];
     }
 
     public function init(): void {
@@ -92,61 +108,6 @@ class Databaza {
             $result = $this->db_backup->insert($tabulka, $data);
             return $this->db_backup->insert_id;
         }
-    }
-
-    /**
-     * Načíta dáta z databázy
-     *
-     * @param string $query SQL dotaz s možnosťou použitia placeholderov
-     * @param array $params Parametre pre SQL dotaz
-     * @param string $output_type Typ výstupných dát (ARRAY_A, OBJECT)
-     * @return array|object[] Výsledky dotazu
-     */
-    public function nacitaj($query, $params = [], $output_type = ARRAY_A): array {
-        global $wpdb;
-        
-        // Úprava dotazu - nahradenie CL- prefixu s prefixom WordPress
-        $query = str_replace('`CL-', '`' . $wpdb->prefix . 'cl_', $query);
-        
-        // Pripravíme dotaz s parametrami
-        if (!empty($params)) {
-            $prepared_query = $this->db_primary->prepare($query, $params);
-        } else {
-            $prepared_query = $query;
-        }
-        
-        // Získame dáta z primárnej DB
-        $primary_data = $this->db_primary->get_results($prepared_query, $output_type);
-        
-        // Pre kontrolu integrity získame dáta aj zo záložnej DB, ale len v ARRAY_A formáte
-        $backup_data = $this->db_backup->get_results($prepared_query, ARRAY_A);
-        
-        // Ak výstup nie je pole, pre porovnanie získame dáta aj v ARRAY_A formáte
-        $primary_data_array = ($output_type !== ARRAY_A) ? 
-            $this->db_primary->get_results($prepared_query, ARRAY_A) : $primary_data;
-        
-        // Hľadáme konkrétne rozdiely (len ak používame ARRAY_A výstup)
-        $rozdiely = $this->najdiRozdiely($primary_data_array, $backup_data);
-        
-        if (!empty($rozdiely)) {
-            // Uložíme len problémové záznamy
-            update_option('cl_db_differences', [
-                'timestamp' => current_time('mysql'),
-                'query' => $query,
-                'rozdiely' => $rozdiely
-            ]);
-            
-            // Notifikácia pre admina (nezastaví systém)
-            add_action('admin_notices', function() use ($rozdiely) {
-                echo '<div class="notice notice-warning"><p>Zistené rozdiely v ' . 
-                     count($rozdiely) . ' záznamoch medzi databázami. ' .
-                     '<a href="' . admin_url('admin.php?page=cl-settings&tab=databazy') . 
-                     '">Zobraziť detaily</a></p></div>';
-            });
-        }
-
-        // Vždy vrátime dáta z primárnej DB
-        return $primary_data !== null ? $primary_data : [];
     }
 
     /**

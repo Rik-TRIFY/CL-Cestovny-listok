@@ -26,7 +26,14 @@ class SpravcaPrekladov {
         'confirm_close_shift' => ['Naozaj chcete uzatvoriť zmenu?', 'Potvrdzovacia správa pre uzatvorenie zmeny'],
         'confirm_reprint' => ['Naozaj chcete znovu vytlačiť tento lístok?', 'Potvrdzovacia správa pre opätovnú tlač'],
         // Pridané nové preklady
-        'recently_added' => ['Naposledy pridané', 'Text pre sekciu naposledy pridaných položiek']
+        'recently_added' => ['Naposledy pridané', 'Text pre sekciu naposledy pridaných položiek'],
+        'processing_title' => ['Spracovanie predaja', 'Nadpis pri spracovaní predaja'],
+        'saving_to_db' => ['Ukladám do databázy...', 'Status ukladania do DB'],
+        'saving_html' => ['Generujem HTML lístok...', 'Status generovania HTML'],
+        'saving_pdf' => ['Generujem PDF lístok...', 'Status generovania PDF'],
+        'printing' => ['Tlačím lístok...', 'Status tlače'],
+        'sale_complete' => ['Predaj úspešne dokončený', 'Správa o úspešnom predaji'],
+        'ok_button' => ['OK', 'Text tlačidla OK']
     ];
 
     public static function ziskajInstanciu(): self {

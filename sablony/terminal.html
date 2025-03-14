@@ -6,12 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>POS Terminál</title>
     <style>
-        /* Na začiatok style sekcie pridáme tieto pravidlá */
-        html, body {
+        /* Upravíme pravidlá pre touch interakcie */
+        html {
             touch-action: manipulation;
             -ms-touch-action: manipulation;
-            overflow: hidden;
-            overscroll-behavior: none;
+            /* Odstránime overscroll-behavior */
+        }
+        
+        body {
+            touch-action: pan-y;  /* Povolíme vertikálne skrolovanie */
+            -ms-touch-action: pan-y;
+            overflow-y: auto;     /* Povolíme vertikálny overflow */
+            overflow-x: hidden;   /* Zakážeme horizontálny scroll */
+            /* Odstránime overscroll-behavior-y */
         }
         
         /* Zabránenie označovaniu textu */
@@ -366,6 +373,57 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Processing Modal */
+        .processing-modal .pos-modal-content {
+            max-width: 400px;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .processing-status {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .status-item {
+            padding: 10px;
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .status-item.completed {
+            color: #46b450;
+            font-weight: bold;
+        }
+        
+        .status-item.completed::before {
+            content: '✓ ';
+        }
+        
+        /* Completion Modal */
+        .completion-modal .pos-modal-content {
+            max-width: 400px;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .pos-complete-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: #46b450;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .pos-complete-btn:hover {
+            background: #3d9c46;
+        }
     </style>
 </head>
 <body>
@@ -681,54 +739,51 @@
                     alert('Košík je prázdny');
                     return;
                 }
-                
-                // V skutočnej implementácii tu bude volanie AJAX pre spracovanie objednávky
-                // Kód nižšie je len ukážka - bude nahradený skutočným volaním API
-                const orderData = {
-                    items: cart.items,
-                    total: Object.values(cart.items).reduce(
-                        (sum, item) => sum + (item.price * item.qty), 0
-                    ).toFixed(2),
-                    timestamp: new Date().toISOString()
-                };
-                
-                console.log('Odosielam údaje predaja:', orderData);
-                
-                // Simulácia AJAX volania
-                setTimeout(() => {
-                    // Simulácia úspešnej odpovede zo servera
-                    const responseData = {
-                        success: true,
-                        orderNumber: '20240325-0001',
-                        html: `<html><body>
-                                <h1>Cestovný lístok č. ${orderData.orderNumber}</h1>
-                                <div>${Object.values(cart.items).map(item => 
-                                    `${item.name} - ${item.qty}x ${item.price.toFixed(2)}€ = ${(item.price * item.qty).toFixed(2)}€`
-                                ).join('<br>')}</div>
-                                <div><b>Celkom: ${orderData.total} €</b></div>
-                              </body></html>`
-                    };
-                    
-                    // Otvoríme okno pre tlač
-                    const printWindow = window.open('', 'PRINT', 'height=600,width=800');
-                    printWindow.document.write(responseData.html);
-                    printWindow.document.close();
-                    printWindow.focus();
-                    
-                    setTimeout(() => {
-                        printWindow.print();
-                        printWindow.close();
-                        
-                        // Vyčistíme košík po úspešnej tlači
-                        cart.items = {};
-                        cart.updateDisplay();
-                        cart.renderCartItems();
-                        
-                        // Vrátime sa na hlavnú obrazovku
-                        cartScreen.classList.remove('active');
-                        terminalScreen.classList.add('active');
-                    }, 250);
-                }, 500);
+
+                // Skutočné AJAX volanie na server
+                fetch(cl_pos.ajaxurl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'cl_dokoncit_predaj',
+                        nonce: cl_pos.nonce,
+                        polozky: JSON.stringify(cart.items)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Otvoríme okno pre tlač so skutočným HTML zo servera
+                        const printWindow = window.open('', 'PRINT', 'width=181');
+                        printWindow.document.write(data.data.html);
+                        printWindow.document.close();
+                        printWindow.focus();
+
+                        setTimeout(() => {
+                            printWindow.print();
+                            printWindow.close();
+
+                            // Vyčistíme košík
+                            cart.items = {};
+                            cart.recentItems = [];
+                            cart.updateDisplay();
+                            cart.renderCartItems();
+                            cart.updateRecentDisplay();
+
+                            // Návrat na hlavnú obrazovku
+                            cartScreen.classList.remove('active');
+                            terminalScreen.classList.add('active');
+                        }, 250);
+                    } else {
+                        alert('Chyba: ' + (data.data.message || 'Neznáma chyba'));
+                    }
+                })
+                .catch(error => {
+                    console.error('AJAX Error:', error);
+                    alert('Došlo k chybe pri komunikácii so serverom');
+                });
             });
             
             // Inicializácia

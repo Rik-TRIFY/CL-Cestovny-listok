@@ -200,53 +200,106 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Košík je prázdny');
                 return;
             }
-            
-            // Transformujeme položky do formátu, ktorý očakáva backend
-            const polozkyPreBackend = Object.values(this.polozky).map(polozka => ({
-                id: polozka.id,
-                nazov: polozka.nazov,
-                cena: polozka.cena,
-                pocet: polozka.pocet
-            }));
-            
-            // AJAX volanie na backend
+        
+            // Zobrazíme processing modal
+            const processingModal = document.createElement('div');
+            processingModal.className = 'pos-modal processing-modal active';
+            processingModal.innerHTML = `
+                <div class="pos-modal-content">
+                    <h2>${cl_preklady.processing_title}</h2>
+                    <div class="processing-status">
+                        <p class="status-item" id="status-db">${cl_preklady.saving_to_db}</p>
+                        <p class="status-item" id="status-html">${cl_preklady.saving_html}</p>
+                        <p class="status-item" id="status-pdf">${cl_preklady.saving_pdf}</p>
+                        <p class="status-item" id="status-print">${cl_preklady.printing}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(processingModal);
+        
+            // AJAX volanie
             fetch(cl_pos.ajaxurl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
                     action: 'cl_dokoncit_predaj',
                     nonce: cl_pos.nonce,
-                    polozky: JSON.stringify(polozkyPreBackend)
+                    polozky: JSON.stringify(this.polozky)
                 })
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Server response:', data);
+                
                 if (data.success) {
-                    // Zobrazíme notifikáciu s poznámkou
-                    alert(data.data.poznamka || 'Predaj bol úspešne dokončený');
+                    // Označíme kroky ako dokončené
+                    document.getElementById('status-db').classList.add('completed');
                     
-                    // Vyčistíme košík
-                    this.polozky = {};
-                    this.aktualizujZobrazenie();
-                    this.ulozDoStorage();
-                    
-                    // Vrátime sa na hlavnú obrazovku
-                    document.getElementById('cart-screen').classList.remove('active');
-                    document.getElementById('terminal-screen').classList.add('active');
-                    
-                    // Otvoríme lístok v novom okne pre náhľad
-                    if (data.data.url_listka) {
-                        window.open(data.data.url_listka, '_blank');
-                    }
+                    setTimeout(() => {
+                        document.getElementById('status-html').classList.add('completed');
+                        
+                        setTimeout(() => {
+                            document.getElementById('status-pdf').classList.add('completed');
+                            
+                            setTimeout(() => {
+                                document.getElementById('status-print').classList.add('completed');
+                                
+                                // Otvoríme okno pre tlač
+                                const printWindow = window.open('', '_blank');
+                                printWindow.document.write(data.data.html);
+                                printWindow.document.close();
+                                printWindow.focus();
+                                
+                                setTimeout(() => {
+                                    printWindow.print();
+                                    
+                                    // Po vytlačení zobrazíme completion modal
+                                    document.body.removeChild(processingModal);
+                                    
+                                    const completionModal = document.createElement('div');
+                                    completionModal.className = 'pos-modal completion-modal active';
+                                    completionModal.innerHTML = `
+                                        <div class="pos-modal-content">
+                                            <h2>${cl_preklady.sale_complete}</h2>
+                                            <div class="sale-details">
+                                                <p>Číslo lístka: ${data.data.cislo_listka}</p>
+                                            </div>
+                                            <button class="pos-complete-btn">${cl_preklady.ok_button}</button>
+                                        </div>
+                                    `;
+                                    document.body.appendChild(completionModal);
+                                    
+                                    // Event listener pre OK tlačidlo
+                                    completionModal.querySelector('.pos-complete-btn').addEventListener('click', () => {
+                                        document.body.removeChild(completionModal);
+                                        printWindow.close();
+                                        
+                                        // Vyčistíme košík
+                                        this.polozky = {};
+                                        this.poslednePolozky = [];
+                                        this.ulozDoStorage();
+                                        this.aktualizujZobrazenie();
+                                        this.aktualizujPoslednePolozky();
+                                        this.aktualizujCelkovuSumu();
+                                        
+                                        // Návrat na hlavnú obrazovku
+                                        document.getElementById('cart-screen').classList.remove('active');
+                                        document.getElementById('terminal-screen').classList.add('active');
+                                    });
+                                }, 500);
+                            }, 500);
+                        }, 500);
+                    }, 500);
                 } else {
-                    alert('Chyba pri dokončení predaja: ' + data.data);
+                    document.body.removeChild(processingModal);
+                    alert('Chyba: ' + (data.data.message || 'Neznáma chyba'));
+                    console.error('Server error:', data);
                 }
             })
             .catch(error => {
-                console.error('Chyba pri dokončení predaja:', error);
-                alert('Došlo k chybe pri dokončení predaja. Skúste to znova.');
+                document.body.removeChild(processingModal);
+                console.error('AJAX Error:', error);
+                alert('Došlo k chybe pri komunikácii so serverom');
             });
         },
         
@@ -491,4 +544,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.closest('.pos-modal').style.display = 'none';
         });
     });
+
+    // V JavaScript kóde všade používame preklady z cl_preklady
+    const html = `
+        <div class="listok">
+            <!-- ...existing structure... -->
+            <div class="sumar">
+                ${cl_preklady.total_sum} ${data.celkova_suma.toFixed(2)} €
+            </div>
+            <!-- ...existing structure... -->
+        </div>
+    `;
 });

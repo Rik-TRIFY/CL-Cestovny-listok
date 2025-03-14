@@ -36,6 +36,8 @@ define('CL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CL_INCLUDES_DIR', CL_PLUGIN_DIR . 'includes/');
 define('CL_ASSETS_URL', plugin_dir_url(__FILE__) . 'assets/');
 define('CL_PREDAJ_DIR', CL_INCLUDES_DIR . 'predaj/');
+define('CL_PREDAJ_HTML_DIR', CL_PREDAJ_DIR . 'html/');    // Nová konštanta
+define('CL_PREDAJ_PDF_DIR', CL_PREDAJ_DIR . 'pdf/');      // Nová konštanta
 define('CL_LOGS_DIR', CL_INCLUDES_DIR . 'logy/');
 
 // Konfigurácia záložnej databázy - použijeme hlavné prihlasovacie údaje
@@ -109,13 +111,21 @@ class CestovneListky {
     private function vytvorPriecinky(): void {
         $priecinky = [
             CL_PREDAJ_DIR,
-            CL_LOGS_DIR
+            CL_PREDAJ_HTML_DIR,    // Nový priečinok
+            CL_PREDAJ_PDF_DIR,     // Nový priečinok
+            CL_LOGS_DIR,
+            CL_PLUGIN_DIR . 'zalohy',
+            CL_PLUGIN_DIR . 'assets/images'
         ];
 
         foreach ($priecinky as $priecinok) {
             if (!file_exists($priecinok)) {
                 wp_mkdir_p($priecinok);
-                file_put_contents($priecinok . 'index.php', '<?php // Silence is golden');
+                // Vytvoríme .htaccess pre zabezpečenie priečinkov
+                if (strpos($priecinok, 'predaj') !== false) {
+                    file_put_contents($priecinok . '/.htaccess', 'deny from all');
+                }
+                file_put_contents($priecinok . '/index.php', '<?php // Silence is golden');
             }
         }
     }
@@ -227,6 +237,16 @@ class CestovneListky {
             }
         }
         
+        // Najprv skontrolujeme či stĺpec existuje
+        $existujuci_stlpec = $wpdb->get_results("SHOW COLUMNS FROM `{$wpdb->prefix}cl_predaj` LIKE 'cislo_listka'");
+        
+        // Ak stĺpec neexistuje, pridáme ho
+        if (empty($existujuci_stlpec)) {
+            $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_predaj` 
+                         ADD COLUMN `cislo_listka` varchar(50) DEFAULT NULL AFTER `id`,
+                         ADD UNIQUE KEY `cislo_listka` (`cislo_listka`)");
+        }
+
         // Kontrola a vytvorenie tabuliek v správnom poradí
         $sql = [
             // Tabuľka typov lístkov - explicitne zabezpečíme stĺpec poradie
@@ -245,14 +265,14 @@ class CestovneListky {
             // Tabuľka predajov
             "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_predaj` (
                 id mediumint(9) NOT NULL AUTO_INCREMENT,
-                cislo_predaja varchar(50) NOT NULL,
+                cislo_listka varchar(50) DEFAULT NULL,
                 predajca_id bigint(20) NOT NULL,
                 celkova_suma decimal(10,2) NOT NULL,
                 datum_predaja datetime DEFAULT CURRENT_TIMESTAMP,
                 storno boolean DEFAULT FALSE,
                 data_listka text,
                 PRIMARY KEY (id),
-                UNIQUE KEY cislo_predaja (cislo_predaja),
+                UNIQUE KEY cislo_listka (cislo_listka),
                 KEY datum_predajca (datum_predaja, predajca_id)
             ) $charset_collate;",
             
@@ -488,7 +508,7 @@ class CestovneListky {
         add_submenu_page(
             'cl-manager',
             'Zálohy',
-            'Zálohy',
+            'Zálohy systému',  // Zmenený názov
             'manage_options',
             'cl-zalohy',
             [$this, 'zobrazZalohy']
@@ -573,6 +593,13 @@ class CestovneListky {
     }
 
     public function zobrazZalohy(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die('Nedostatočné oprávnenia');
+        }
+        // Pridáme CSS pre zálohy
+        wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
+        
+        // Zobrazíme pohľad
         require_once CL_INCLUDES_DIR . 'admin/pohlady/zalohy.php';
     }
 

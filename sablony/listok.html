@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { 
+            size: 80mm auto;
+            margin: 0;
+        }
+        body { 
+            font-family: Arial, sans-serif;
+            margin: 0; 
+            padding: 10px;
+            font-size: 12px;
+        }
+        .listok {
+            width: 100%;
+            max-width: 80mm;
+            margin: 0 auto;
+        }
+        .hlavicka {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .hlavicka img {
+            max-width: 150px;
+            height: auto;
+        }
+        .hlavicka-flex {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        .polozky {
+            margin: 10px 0;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 5px 0;
+        }
+        .polozka {
+            margin: 5px 0;
+        }
+        .polozka-riadok {
+            display: flex;
+            justify-content: space-between;
+        }
+        .sumar {
+            text-align: right;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .paticka {
+            text-align: center;
+            font-size: 90%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="listok">
+        <div class="hlavicka">
+            <a href="https://aaa.trez.sk/wp-content/uploads/2020/05/logo_farebne.png">
+                <img src="/wp-content/uploads/2020/05/logo_farebne.png" alt="Logo" />
+            </a>
+            <div class="hlavicka-flex">
+                <span>Cestujete s podporou Trenčianskeho samosprávneho kraja</span>
+                <img src="https://www.tsk.sk/buxus/images/erb_symboly/erb_text_ciernobiely_v9.png" alt="TSK Logo" width="40" />
+            </div>
+            <div class="hlavicka-flex">
+                <span>{predajca}</span>
+                <span>{datum} {cas}</span>
+            </div>
+            <div>Číslo lístka: {cislo_listka}</div>
+        </div>
+
+        <div class="polozky">
+            {polozky}
+        </div>
+
+        <div class="sumar">
+            SPOLU: {suma}
+        </div>
+
+        <div class="paticka">
+            <div>Ďakujeme za Vašu návštevu!</div>
+        </div>
+    </div>
+</body>
+</html>

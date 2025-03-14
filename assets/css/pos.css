@@ -186,6 +186,7 @@
 /* Ticket button */
 .cl-ticket-btn {
     background: #fff;
+    border-radius: 10px !important;
 }
 
 .cl-ticket-btn .nazov {

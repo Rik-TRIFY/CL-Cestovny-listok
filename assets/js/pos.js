@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure all required DOM elements exist
+    const cartItemCount = document.getElementById('cart-item-count');
+    const cartItemsContainer = document.querySelector('.pos-cart-items');
+    const totalAmountElement = document.querySelector('.pos-total-amount');
+    
+    // Guard clause - don't initialize if required elements are missing
+    if (!cartItemCount || !cartItemsContainer || !totalAmountElement) {
+        console.warn('Required DOM elements for POS are missing');
+        return;
+    }
+
     const cart = {
         items: {},
         recentItems: [], // Zmeníme na jednoduché pole
@@ -16,6 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             this.updateRecentDisplay();
             
+            // Safely update display only if elements exist
+            if (cartItemCount) {
+                const totalItems = Object.values(this.items).reduce((sum, item) => sum + item.qty, 0);
+                cartItemCount.textContent = totalItems;
+            }
+            
             this.updateDisplay();
         },
         
@@ -30,6 +47,11 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         
         updateDisplay() {
+            if (!cartItemCount) return;
+            
+            const totalItems = Object.values(this.items).reduce((sum, item) => sum + item.qty, 0);
+            cartItemCount.textContent = totalItems;
+
             const container = document.querySelector('.pos-cart-items');
             container.innerHTML = '';
             
