@@ -120,6 +120,7 @@ if ($has_order_column) {
             <div class="form-field">
                 <label>Cena (€):</label>
                 <input type="number" name="cena" id="listok-cena" step="0.01" min="0" required>
+                <p class="description">Cena lístka v eurách. Pre bezplatné lístky zadajte 0.00</p>
             </div>
             
             <div class="form-field">

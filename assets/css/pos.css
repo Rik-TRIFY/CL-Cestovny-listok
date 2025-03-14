@@ -200,6 +200,30 @@
     color: #2271b1;
 }
 
+/* Štýly pre typy lístkov */
+.cl-ticket-btn.ticket-standard {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+.cl-ticket-btn.ticket-free {
+    background: #e8f5e9;
+    border: 1px solid #c8e6c9;
+}
+
+.cl-ticket-btn.ticket-qr {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+}
+
+.cl-ticket-btn.ticket-qr .pos-product-name {
+    color: #1976d2;
+}
+
+.cl-ticket-btn.ticket-free .pos-product-price {
+    color: #2e7d32;
+}
+
 /* Function buttons */
 .cl-function-btn {
     background: #e0e0e0;
@@ -896,4 +920,42 @@
 
 .pos-recent-items + .pos-cart-button {
     margin-top: 0 !important; /* Odstránenie dodatočných marginov */
+}
+
+/* Štýly pre typy lístkov */
+.pos-product.ticket-standard {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+.pos-product.ticket-free {
+    background-color: #e8f5e9;
+    border: 1px solid #c8e6c9;
+}
+
+.pos-product.ticket-qr {
+    background-color: #e3f2fd;
+    border: 1px solid #bbdefb;
+}
+
+/* Reset farieb textu na pôvodné */
+.pos-product .pos-product-name {
+    color: #333333 !important; /* Čierny text pre všetky typy */
+}
+
+.pos-product .pos-product-price {
+    color: #0073aa !important; /* Modrá cena pre všetky typy */
+}
+
+/* Hover efekty s zachovaním farebnej schémy */
+.pos-product.ticket-standard:hover {
+    background-color: #f5f5f5;
+}
+
+.pos-product.ticket-free:hover {
+    background-color: #c8e6c9;
+}
+
+.pos-product.ticket-qr:hover {
+    background-color: #bbdefb;
 }

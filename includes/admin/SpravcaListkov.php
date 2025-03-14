@@ -154,7 +154,8 @@ class SpravcaListkov {
         $cena = (float)$_POST['cena'];
         $poradie = isset($_POST['poradie']) ? (int)$_POST['poradie'] : 0;
         
-        if (empty($nazov) || empty($text_listok) || $cena <= 0) {
+        // Zmenená validácia - odstránená kontrola na cena <= 0
+        if (empty($nazov) || empty($text_listok)) {
             wp_send_json_error('Neplatné údaje');
             return;
         }
@@ -205,7 +206,8 @@ class SpravcaListkov {
         $cena = (float)$_POST['cena'];
         $poradie = isset($_POST['poradie']) ? (int)$_POST['poradie'] : 0;
         
-        if (empty($nazov) || $cena <= 0) {
+        // Zmenená validácia - odstránená kontrola na cena <= 0
+        if (empty($nazov)) {
             wp_send_json_error('Neplatné údaje');
             return;
         }

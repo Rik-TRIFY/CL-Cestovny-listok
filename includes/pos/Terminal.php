@@ -161,11 +161,20 @@ class Terminal {
         $html = '';
         
         foreach ($listky as $listok) {
+            // Určenie typu lístka
+            $cssClass = 'ticket-standard';
+            if (floatval($listok->cena) === 0.00) {
+                $cssClass = 'ticket-free';
+            } elseif (stripos($listok->nazov, 'QR') !== false) {
+                $cssClass = 'ticket-qr';
+            }
+            
             $html .= sprintf(
-                '<div class="pos-product cl-ticket-btn" data-id="%d" data-nazov="%s" data-cena="%.2f">
+                '<div class="pos-product cl-ticket-btn %s" data-id="%d" data-nazov="%s" data-cena="%.2f">
                     <div class="pos-product-name">%s</div>
                     <div class="pos-product-price">%.2f €</div>
                 </div>',
+                $cssClass,
                 $listok->id,
                 esc_attr($listok->nazov),
                 (float)$listok->cena,
