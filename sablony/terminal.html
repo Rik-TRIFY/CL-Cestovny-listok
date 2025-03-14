@@ -377,6 +377,47 @@
         <button id="go-to-cart" class="pos-cart-button">
             {goto_cart_button} (<span id="cart-item-count">0</span>)
         </button>
+
+        <!-- Nové tlačidlá pod košíkom -->
+        <div class="pos-bottom-buttons">
+            <button id="show-previous" class="pos-half-button">
+                <i class="fas fa-history"></i> Predchádzajúce lístky
+                <span class="ticket-count">0</span>
+            </button>
+            <button id="show-menu" class="pos-half-button">
+                <i class="fas fa-bars"></i> Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal pre predchádzajúce lístky -->
+    <div id="previous-tickets-modal" class="pos-modal">
+        <div class="pos-modal-content">
+            <div class="pos-modal-header">
+                <h3>Predchádzajúce lístky</h3>
+                <button class="pos-modal-close">&times;</button>
+            </div>
+            <div class="pos-modal-body">
+                <div id="previous-tickets-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pre menu -->
+    <div id="menu-modal" class="pos-modal">
+        <div class="pos-modal-content">
+            <div class="pos-modal-header">
+                <h3>Menu</h3>
+                <button class="pos-modal-close">&times;</button>
+            </div>
+            <div class="pos-modal-body">
+                <button id="close-shift" class="pos-menu-button">
+                    <i class="fas fa-file-alt"></i>
+                    Uzatvorenie zmeny
+                </button>
+                <!-- Tu môžeme pridať ďalšie položky menu -->
+            </div>
+        </div>
     </div>
 
     <!-- Obrazovka košíka -->

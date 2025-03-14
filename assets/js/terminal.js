@@ -40,19 +40,28 @@ document.addEventListener('DOMContentLoaded', function() {
          * Pridá položku do zoznamu posledných položiek
          */
         pridajDoPoslednych(id, nazov, cena) {
-            // Odstránenie položky z posledných ak už tam je
-            this.poslednePolozky = this.poslednePolozky.filter(polozka => polozka.id !== id);
-            
-            // Pridanie na začiatok zoznamu
+            // Jednoducho pridáme novú položku na začiatok poľa
             this.poslednePolozky.unshift({ id, nazov, cena });
             
             // Ponechanie len posledných 2 položiek
             this.poslednePolozky = this.poslednePolozky.slice(0, 2);
             
-            // Aktualizácia zobrazenia posledných položiek
+            // Aktualizácia zobrazenia
             this.aktualizujPoslednePolozky();
         },
         
+        // Pridanie do posledných položiek - upravená logika
+        addToRecent(id, name, price) {
+            // Vždy pridáme novú položku na začiatok poľa
+            this.recentItems.unshift({ id, name, price });
+            
+            // Ponechanie len posledných 2 položiek
+            this.recentItems = this.recentItems.slice(0, 2);
+            
+            // Aktualizácia zobrazenia posledných položiek
+            this.updateRecentDisplay();
+        },
+
         /**
          * Aktualizuje zobrazenie posledných položiek
          */
@@ -299,4 +308,126 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Event listenery pre prepínanie obrazoviek (už implementované v HTML)
+
+    // Zobrazenie predchádzajúcich lístkov
+    document.getElementById('show-previous').addEventListener('click', function() {
+        fetch(cl_pos.ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'cl_get_previous_tickets',
+                nonce: cl_pos.nonce
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('previous-tickets-list');
+                container.innerHTML = data.data.tickets.map(ticket => `
+                    <div class="previous-ticket-item">
+                        <div class="previous-ticket-info">
+                            <strong>${ticket.cislo_listka}</strong><br>
+                            ${ticket.datum}
+                        </div>
+                        <div class="previous-ticket-actions">
+                            <button onclick="openTicket('${ticket.cislo_listka}')" class="view-button">
+                                Zobraziť
+                            </button>
+                            <button onclick="reprintTicket('${ticket.cislo_listka}')" class="reprint-button">
+                                Tlačiť znova
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('previous-tickets-modal').style.display = 'block';
+            }
+        });
+    });
+
+    // Menu akcie
+    document.getElementById('show-menu').addEventListener('click', function() {
+        document.getElementById('menu-modal').style.display = 'block';
+    });
+
+    // Uzatvorenie zmeny
+    document.getElementById('close-shift').addEventListener('click', function() {
+        if (!confirm('Naozaj chcete uzatvoriť zmenu?')) return;
+        
+        fetch(cl_pos.ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'cl_close_shift',
+                nonce: cl_pos.nonce
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const printWindow = window.open('', 'PRINT', 'height=600,width=800');
+                printWindow.document.write(data.data.report);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+        });
+    });
+
+    // Zatváranie modálnych okien
+    document.querySelectorAll('.pos-modal-close').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.pos-modal').style.display = 'none';
+        });
+    });
+
+    // Pomocné funkcie
+    window.openTicket = function(cisloListka) {
+        fetch(cl_pos.ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'cl_get_ticket_html',
+                nonce: cl_pos.nonce,
+                cislo_listka: cisloListka
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(data.data.html);
+                printWindow.document.close();
+            }
+        });
+    };
+
+    window.reprintTicket = function(cisloListka) {
+        if (!confirm('Naozaj chcete znovu vytlačiť tento lístok?')) return;
+        
+        fetch(cl_pos.ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'cl_reprint_ticket',
+                nonce: cl_pos.nonce,
+                cislo_listka: cisloListka
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const printWindow = window.open('', 'PRINT', 'height=600,width=800');
+                printWindow.document.write(data.data.html);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
+            }
+        });
+    };
 });

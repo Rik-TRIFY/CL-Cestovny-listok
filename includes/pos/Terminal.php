@@ -26,6 +26,10 @@ class Terminal {
         add_action('wp_ajax_cl_nacitaj_predaje', [$this, 'ajaxNacitajPosledne']);
         add_action('wp_ajax_cl_tlacit_listok', [$this, 'ajaxTlacitListok']);
         add_action('wp_enqueue_scripts', [$this, 'pridajAssets']);
+        add_action('wp_ajax_cl_get_previous_tickets', [$this, 'ajaxGetPreviousTickets']);
+        add_action('wp_ajax_cl_get_ticket_html', [$this, 'ajaxGetTicketHtml']);
+        add_action('wp_ajax_cl_reprint_ticket', [$this, 'ajaxReprintTicket']);
+        add_action('wp_ajax_cl_close_shift', [$this, 'ajaxCloseShift']);
     }
 
     public function pridajAssets(): void {
@@ -651,5 +655,118 @@ class Terminal {
             'cislo_listka' => $predaj['cislo_predaja'],
             'url_listka' => $url_listka
         ]);
+    }
+
+    public function ajaxGetPreviousTickets(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        global $wpdb;
+        $tickets = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, cislo_predaja as cislo_listka, DATE_FORMAT(datum_predaja, '%d.%m.%Y %H:%i') as datum
+                 FROM {$wpdb->prefix}cl_predaj
+                 WHERE DATE(datum_predaja) = CURDATE()
+                 AND predajca_id = %d
+                 ORDER BY datum_predaja DESC
+                 LIMIT 10",
+                get_current_user_id()
+            )
+        );
+        
+        wp_send_json_success(['tickets' => $tickets]);
+    }
+
+    public function ajaxGetTicketHtml(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        $cislo_listka = sanitize_text_field($_POST['cislo_listka']);
+        $html = $this->nacitajHtmlListka($cislo_listka);
+        
+        wp_send_json_success(['html' => $html]);
+    }
+
+    public function ajaxReprintTicket(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        $cislo_listka = sanitize_text_field($_POST['cislo_listka']);
+        $html = $this->nacitajHtmlListka($cislo_listka);
+        
+        // Zalogujeme opätovnú tlač
+        $spravca = new \CL\jadro\SpravcaSuborov();
+        $spravca->zapisDoLogu('REPRINT', [
+            'cislo_listka' => $cislo_listka,
+            'predajca' => wp_get_current_user()->display_name,
+            'datum' => current_time('mysql')
+        ]);
+        
+        wp_send_json_success(['html' => $html]);
+    }
+
+    public function ajaxCloseShift(): void {
+        check_ajax_referer('cl_pos_nonce', 'nonce');
+        
+        global $wpdb;
+        $report = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT tl.nazov, COUNT(*) as pocet
+                 FROM {$wpdb->prefix}cl_polozky_predaja pp
+                 JOIN {$wpdb->prefix}cl_predaj p ON pp.predaj_id = p.id
+                 JOIN {$wpdb->prefix}cl_typy_listkov tl ON pp.typ_listka_id = tl.id
+                 WHERE DATE(p.datum_predaja) = CURDATE()
+                 AND p.predajca_id = %d
+                 AND p.storno = 0
+                 GROUP BY tl.id, tl.nazov
+                 ORDER BY tl.nazov",
+                get_current_user_id()
+            )
+        );
+        
+        $celkova_suma = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT SUM(celkova_suma)
+                 FROM {$wpdb->prefix}cl_predaj
+                 WHERE DATE(datum_predaja) = CURDATE()
+                 AND predajca_id = %d
+                 AND storno = 0",
+                get_current_user_id()
+            )
+        );
+        
+        $html = $this->generujReportHtml($report, $celkova_suma);
+        
+        wp_send_json_success(['report' => $html]);
+    }
+
+    private function nacitajHtmlListka(string $cislo_listka): string {
+        $subor = CL_PREDAJ_DIR . 'listok-' . $cislo_listka . '.html';
+        if (!file_exists($subor)) {
+            throw new \Exception('Lístok sa nenašiel');
+        }
+        return file_get_contents($subor);
+    }
+
+    private function generujReportHtml(array $report, float $celkova_suma): string {
+        $html = '<!DOCTYPE html><html><head>';
+        $html .= '<style>
+            body { font-family: Arial; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+            .total { font-weight: bold; margin-top: 20px; text-align: right; }
+        </style>';
+        $html .= '</head><body>';
+        $html .= '<h2>Denný report predaja - ' . date('d.m.Y') . '</h2>';
+        $html .= '<table><tr><th>Typ lístka</th><th>Počet</th></tr>';
+        
+        foreach ($report as $item) {
+            $html .= "<tr><td>{$item->nazov}</td><td>{$item->pocet}x</td></tr>";
+        }
+        
+        $html .= '</table>';
+        $html .= '<div class="total">Celková suma: ' . number_format($celkova_suma, 2) . ' €</div>';
+        $html .= '<div>Dátum: ' . date('d.m.Y H:i') . '</div>';
+        $html .= '<div>Predajca: ' . wp_get_current_user()->display_name . '</div>';
+        $html .= '</body></html>';
+        
+        return $html;
     }
 }
