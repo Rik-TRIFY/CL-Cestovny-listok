@@ -126,9 +126,6 @@ class CestovneListky {
             wp_die('Plugin nemôže byť aktivovaný - nesplnené minimálne požiadavky.');
         }
 
-        // Vytvoríme/skontrolujeme tabuľky pri každej aktivácii
-        $this->vytvorTabulky();
-
         // Vytvorenie priečinkov
         $priecinky = [
             CL_PREDAJ_DIR,
@@ -145,21 +142,8 @@ class CestovneListky {
             }
         }
 
-        // Vytvorenie databázových tabuliek
+        // Vytvorenie databázových tabuliek (len raz)
         $this->vytvorTabulky();
-
-        // Pridanie stĺpca text_listok ak neexistuje
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'cl_typy_listkov';
-        $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-                                  WHERE TABLE_SCHEMA = '" . DB_NAME . "' 
-                                  AND TABLE_NAME = '{$table_name}'
-                                  AND COLUMN_NAME = 'text_listok'");
-                                  
-        if (empty($row)) {
-            $wpdb->query("ALTER TABLE `{$table_name}` 
-                         ADD COLUMN `text_listok` varchar(200) NOT NULL AFTER `nazov`");
-        }
 
         // Základné nastavenia - zmenené na public metódu
         $spravca = new jadro\SpravcaVerzie();
@@ -168,6 +152,15 @@ class CestovneListky {
         // Aktivácia kontrol
         $kontroler = new jadro\Kontroler();
         $kontroler->aktivujKontroly();
+    }
+
+    public function aktivuj(): void {
+        // Existujúci kód aktivácie...
+        
+        // Vytvoríme tabuľku prekladov
+        \CL\jadro\SpravcaPrekladov::ziskajInstanciu()->vytvorTabulku();
+        
+        flush_rewrite_rules();
     }
         
     public function skontrolujPoziadavky(): bool {
@@ -258,8 +251,9 @@ class CestovneListky {
                 datum_predaja datetime DEFAULT CURRENT_TIMESTAMP,
                 storno boolean DEFAULT FALSE,
                 data_listka text,
-                PRIMARY KEY  (id),
-                KEY predajca_id (predajca_id)
+                PRIMARY KEY (id),
+                UNIQUE KEY cislo_predaja (cislo_predaja),
+                KEY datum_predajca (datum_predaja, predajca_id)
             ) $charset_collate;",
             
             // Tabuľka položiek predaja
@@ -284,6 +278,18 @@ class CestovneListky {
                 updated datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY  (id),
                 UNIQUE KEY option_name (option_name)
+            ) $charset_collate;",
+
+            // Pridáme tabuľku prekladov
+            "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_preklady` (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                kluc varchar(100) NOT NULL,
+                hodnota text NOT NULL,
+                popis text,
+                vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
+                aktualizovane datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY  (id),
+                UNIQUE KEY kluc (kluc)
             ) $charset_collate;"
         ];
 
@@ -293,7 +299,23 @@ class CestovneListky {
             dbDelta($query);
         }
         
-        // Pridáme foreign keys v separátnych dotazoch
+        // Najprv odstránime existujúce foreign keys ak existujú
+        $existing_keys = $wpdb->get_results("
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.TABLE_CONSTRAINTS 
+            WHERE TABLE_SCHEMA = '" . DB_NAME . "' 
+            AND TABLE_NAME = '{$wpdb->prefix}cl_polozky_predaja'
+            AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+        ");
+
+        if ($existing_keys) {
+            foreach ($existing_keys as $key) {
+                $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_polozky_predaja` 
+                    DROP FOREIGN KEY `{$key->CONSTRAINT_NAME}`");
+            }
+        }
+
+        // Teraz pridáme foreign keys nanovo
         $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_polozky_predaja` 
             ADD CONSTRAINT `fk_predaj` FOREIGN KEY (predaj_id) 
             REFERENCES `{$wpdb->prefix}cl_predaj` (id) ON DELETE CASCADE");
@@ -331,6 +353,70 @@ class CestovneListky {
         if (empty($row)) {
             $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_typy_listkov` 
                          ADD COLUMN `poradie` int(11) DEFAULT 0 AFTER `aktivny`");
+        }
+
+        // Po vytvorení tabuľky prekladov vložíme predvolené hodnoty
+        $preklady = [
+            'button_back' => ['NASPÄŤ', 'Text tlačidla pre návrat'],
+            'button_add' => ['PRIDAŤ DO KOŠÍKA', 'Text tlačidla pre pridanie do košíka'],
+            'button_cart' => ['KOŠÍK', 'Text tlačidla košíka'],
+            'button_checkout' => ['DOKONČIŤ A TLAČIŤ', 'Text tlačidla pre dokončenie'],
+            'cart_empty' => ['Košík je prázdny', 'Text prázdneho košíka'],
+            'cart_title' => ['Košík', 'Nadpis košíka']
+        ];
+
+        // Vložíme predvolené preklady, ak ešte neexistujú
+        foreach ($preklady as $kluc => $data) {
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$wpdb->prefix}cl_preklady` WHERE kluc = %s",
+                $kluc
+            ));
+
+            if (!$exists) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'cl_preklady',
+                    [
+                        'kluc' => $kluc,
+                        'hodnota' => $data[0],
+                        'popis' => $data[1]
+                    ],
+                    ['%s', '%s', '%s']
+                );
+            }
+        }
+
+        // Kontrola existencie foreign keys
+        $existing_constraints = $wpdb->get_results("
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = '" . DB_NAME . "' 
+            AND TABLE_NAME = '{$wpdb->prefix}cl_polozky_predaja'
+            AND REFERENCED_TABLE_NAME IS NOT NULL
+        ");
+
+        $constraint_names = array_map(function($row) {
+            return $row->CONSTRAINT_NAME;
+        }, $existing_constraints);
+
+        // Pridáme foreign keys len ak neexistujú
+        if (!in_array('fk_predaj', $constraint_names)) {
+            try {
+                $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_polozky_predaja` 
+                    ADD CONSTRAINT `fk_predaj` FOREIGN KEY (predaj_id) 
+                    REFERENCES `{$wpdb->prefix}cl_predaj` (id) ON DELETE CASCADE");
+            } catch (\Exception $e) {
+                error_log('Chyba pri pridávaní fk_predaj: ' . $e->getMessage());
+            }
+        }
+            
+        if (!in_array('fk_typ_listka', $constraint_names)) {
+            try {
+                $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_polozky_predaja` 
+                    ADD CONSTRAINT `fk_typ_listka` FOREIGN KEY (typ_listka_id) 
+                    REFERENCES `{$wpdb->prefix}cl_typy_listkov` (id)");
+            } catch (\Exception $e) {
+                error_log('Chyba pri pridávaní fk_typ_listka: ' . $e->getMessage());
+            }
         }
     }
 
@@ -427,6 +513,14 @@ class CestovneListky {
             'cl-logy',
             [$this, 'zobrazLogy']
         );
+
+        // Odstránime pridanú položku prekladov z admin menu
+        // a necháme len záložku v nastaveniach
+    }
+
+    // Nová metóda pre zobrazenie prekladov
+    public function zobrazPreklady(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/preklady.php';
     }
 
     public function pridajAssets(): void {
@@ -538,6 +632,10 @@ class CestovneListky {
         }
                 
         require_once CL_INCLUDES_DIR . 'admin/pohlady/import-export.php';
+    }
+
+    public function zobrazHistoriu(): void {
+        require_once CL_INCLUDES_DIR . 'admin/pohlady/historia-predaja.php';
     }
 
     public function logJavascriptError(): void {

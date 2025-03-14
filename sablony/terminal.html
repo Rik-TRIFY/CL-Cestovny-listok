@@ -422,6 +422,8 @@
 
     <!-- Obrazovka košíka -->
     <div id="cart-screen" class="pos-screen">
+
+        
         <div class="pos-cart">
             <button id="back-to-terminal" class="pos-back-button">
                 &larr; {back_button}
@@ -505,16 +507,15 @@
                 
                 // Pridanie do posledných položiek
                 addToRecent(id, name, price) {
-                    // Odstranenie položky z posledných ak už tam je
-                    this.recentItems = this.recentItems.filter(item => item.id !== id);
-                    
-                    // Pridanie na začiatok posledných
+                    // Vždy pridáme novú položku na začiatok poľa
                     this.recentItems.unshift({ id, name, price });
                     
-                    // Ponechanie len posledných 2 položiek
-                    this.recentItems = this.recentItems.slice(0, 2);
+                    // Obmedzíme len na posledné 2 položky
+                    if (this.recentItems.length > 2) {
+                        this.recentItems.pop();
+                    }
                     
-                    // Aktualizácia zobrazenia posledných položiek
+                    // Aktualizácia zobrazenia
                     this.updateRecentDisplay();
                 },
                 
@@ -564,15 +565,18 @@
                                 <button class="pos-qty-btn minus" data-id="${item.id}">-</button>
                                 <span class="pos-item-qty">${item.qty}</span>
                                 <button class="pos-qty-btn plus" data-id="${item.id}">+</button>
-                                <button class="pos-qty-btn ok-btn" data-id="${item.id}">OK</button>
                             </div>
                         `;
                         container.appendChild(itemElement);
                     });
                     
-                    // Pridáme event listenery pre tlačidlá v košíku
+                    // Event listeners pre tlačidlá
                     document.querySelectorAll('.pos-qty-btn.minus').forEach(btn => {
-                        btn.addEventListener('click', () => this.removeItem(btn.dataset.id));
+                        btn.addEventListener('click', () => {
+                            this.removeItem(btn.dataset.id);
+                            this.renderCartItems(); // Pridané obnovenie zobrazenia
+                            this.updateTotal();     // Pridané obnovenie celkovej sumy
+                        });
                     });
                     
                     document.querySelectorAll('.pos-qty-btn.plus').forEach(btn => {
@@ -580,26 +584,26 @@
                             const id = btn.dataset.id;
                             const item = this.items[id];
                             this.addItem(id, item.name, item.price);
+                            this.renderCartItems(); // Pridané obnovenie zobrazenia
+                            this.updateTotal();     // Pridané obnovenie celkovej sumy
                         });
                     });
                     
-                    document.querySelectorAll('.pos-qty-btn.ok-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            // Animácia potvrdenia
-                            this.textContent = '✓';
-                            this.style.backgroundColor = '#46b450';
-                            this.style.color = 'white';
-                            
-                            setTimeout(() => {
-                                this.textContent = 'OK';
-                                this.style.backgroundColor = '';
-                                this.style.color = '';
-                            }, 1000);
-                        });
-                    });
-                    
-                    // Aktualizácia celkovej sumy
                     this.updateTotal();
+                },
+
+                // Aktualizácia počtu položiek a celkovej sumy
+                updateDisplay() {
+                    const totalItems = Object.values(this.items).reduce((sum, item) => sum + item.qty, 0);
+                    document.getElementById('cart-item-count').textContent = totalItems;
+                    
+                    // Aktualizujeme aj zobrazenie košíka ak je otvorený
+                    if (document.getElementById('cart-screen').classList.contains('active')) {
+                        this.renderCartItems();
+                    }
+                    
+                    // Uložíme košík do localStorage
+                    localStorage.setItem('posCart', JSON.stringify(this.items));
                 },
                 
                 // Aktualizácia celkovej sumy
@@ -609,15 +613,6 @@
                     );
                     document.getElementById('cart-total-amount').textContent = total.toFixed(2) + ' €';
                 },
-                
-                // Aktualizácia zobrazenia počtu položiek
-                updateDisplay() {
-                    const totalItems = Object.values(this.items).reduce((sum, item) => sum + item.qty, 0);
-                    document.getElementById('cart-item-count').textContent = totalItems;
-                    
-                    // Uložíme košík do localStorage pre perzistenciu
-                    localStorage.setItem('posCart', JSON.stringify(this.items));
-                }
             };
             
             // Načítanie košíka z localStorage ak existuje

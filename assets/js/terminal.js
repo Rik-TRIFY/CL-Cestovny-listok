@@ -40,11 +40,18 @@ document.addEventListener('DOMContentLoaded', function() {
          * Pridá položku do zoznamu posledných položiek
          */
         pridajDoPoslednych(id, nazov, cena) {
-            // Jednoducho pridáme novú položku na začiatok poľa
-            this.poslednePolozky.unshift({ id, nazov, cena });
+            // Vložíme novú položku na začiatok poľa
+            this.poslednePolozky.unshift({
+                id: id,
+                nazov: nazov,
+                cena: cena,
+                cas: Date.now()
+            });
             
-            // Ponechanie len posledných 2 položiek
-            this.poslednePolozky = this.poslednePolozky.slice(0, 2);
+            // Obmedzíme len na posledné 2 položky bez akéhokoľvek filtrovania
+            if (this.poslednePolozky.length > 2) {
+                this.poslednePolozky.pop(); // Odstránime najstaršiu položku
+            }
             
             // Aktualizácia zobrazenia
             this.aktualizujPoslednePolozky();
@@ -113,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="pos-qty-btn minus" data-id="${polozka.id}">-</button>
                         <span class="pos-item-qty">${polozka.pocet}</span>
                         <button class="pos-qty-btn plus" data-id="${polozka.id}">+</button>
-                        <button class="pos-qty-btn ok-btn" data-id="${polozka.id}">OK</button>
                     </div>
                 `;
                 kontajner.appendChild(element);
@@ -132,22 +138,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
             
-            document.querySelectorAll('.pos-qty-btn.ok-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Animácia potvrdenia
-                    this.textContent = '✓';
-                    this.style.backgroundColor = '#46b450';
-                    this.style.color = 'white';
-                    
-                    setTimeout(() => {
-                        this.textContent = 'OK';
-                        this.style.backgroundColor = '';
-                        this.style.color = '';
-                    }, 1000);
-                });
-            });
-            
-            // Aktualizácia celkovej sumy
             this.aktualizujCelkovuSumu();
         },
         
@@ -175,6 +165,8 @@ document.addEventListener('DOMContentLoaded', function() {
          */
         ulozDoStorage() {
             localStorage.setItem('posCart', JSON.stringify(this.polozky));
+            // Pridáme uloženie posledných položiek
+            localStorage.setItem('posRecentItems', JSON.stringify(this.poslednePolozky));
         },
         
         /**
@@ -183,9 +175,17 @@ document.addEventListener('DOMContentLoaded', function() {
         nacitajZoStorage() {
             try {
                 const ulozenyKosik = localStorage.getItem('posCart');
+                const ulozenePosledne = localStorage.getItem('posRecentItems');
+                
                 if (ulozenyKosik) {
                     this.polozky = JSON.parse(ulozenyKosik);
                     this.aktualizujZobrazenie();
+                }
+                
+                // Načítame aj posledné položky
+                if (ulozenePosledne) {
+                    this.poslednePolozky = JSON.parse(ulozenePosledne);
+                    this.aktualizujPoslednePolozky();
                 }
             } catch (e) {
                 console.error('Chyba pri načítaní košíka:', e);
@@ -224,8 +224,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Otvoríme okno pre tlač lístka
-                    this.tlacListok(data.data.cislo_listka, data.data.url_listka);
+                    // Zobrazíme notifikáciu s poznámkou
+                    alert(data.data.poznamka || 'Predaj bol úspešne dokončený');
                     
                     // Vyčistíme košík
                     this.polozky = {};
@@ -235,6 +235,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Vrátime sa na hlavnú obrazovku
                     document.getElementById('cart-screen').classList.remove('active');
                     document.getElementById('terminal-screen').classList.add('active');
+                    
+                    // Otvoríme lístok v novom okne pre náhľad
+                    if (data.data.url_listka) {
+                        window.open(data.data.url_listka, '_blank');
+                    }
                 } else {
                     alert('Chyba pri dokončení predaja: ' + data.data);
                 }
@@ -351,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Uzatvorenie zmeny
     document.getElementById('close-shift').addEventListener('click', function() {
-        if (!confirm('Naozaj chcete uzatvoriť zmenu?')) return;
+        if (!confirm(cl_preklady.confirm_reprint)) return;
         
         fetch(cl_pos.ajaxurl, {
             method: 'POST',
@@ -405,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.reprintTicket = function(cisloListka) {
-        if (!confirm('Naozaj chcete znovu vytlačiť tento lístok?')) return;
+        if (!confirm(cl_preklady.confirm_reprint)) return;
         
         fetch(cl_pos.ajaxurl, {
             method: 'POST',
@@ -430,4 +435,60 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     };
+
+    // Event listener pre tlačidlo Predchádzajúce lístky
+    document.getElementById('show-previous').addEventListener('click', function() {
+        console.log('Kliknuté na Predchádzajúce lístky');
+        
+        // Zobrazíme modálne okno okamžite s načítavacou správou
+        document.getElementById('previous-tickets-modal').style.display = 'block';
+        document.getElementById('previous-tickets-list').innerHTML = 'Načítavam predchádzajúce lístky...';
+        
+        // AJAX volanie na načítanie lístkov
+        fetch(cl_pos.ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'cl_get_previous_tickets',
+                nonce: cl_pos.nonce
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('previous-tickets-list');
+            
+            if (data.success && data.data.tickets && data.data.tickets.length > 0) {
+                container.innerHTML = data.data.tickets.map(ticket => `
+                    <div class="previous-ticket-item">
+                        <div class="previous-ticket-info">
+                            <strong>Lístok č. ${ticket.cislo_listka}</strong>
+                            <div>${ticket.datum}</div>
+                        </div>
+                        <div class="previous-ticket-actions">
+                            <button onclick="openTicket('${ticket.cislo_listka}')" class="view-button">
+                                ${cl_preklady.view_ticket}
+                            </button>
+                            <button onclick="reprintTicket('${ticket.cislo_listka}')" class="reprint-button">
+                                ${cl_preklady.print_ticket}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="empty-state">Neboli nájdené žiadne predchádzajúce lístky.</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Chyba pri načítaní lístkov:', error);
+            document.getElementById('previous-tickets-list').innerHTML = 
+                '<div class="error-state">Chyba pri načítaní predchádzajúcich lístkov.</div>';
+        });
+    });
+
+    // Zatváranie modálneho okna
+    document.querySelectorAll('.pos-modal-close').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.pos-modal').style.display = 'none';
+        });
+    });
 });

@@ -1,12 +1,21 @@
 document.addEventListener('DOMContentLoaded', function() {
     const cart = {
         items: {},
+        recentItems: [], // Zmeníme na jednoduché pole
         
         addItem(id, name, price) {
             if (!this.items[id]) {
                 this.items[id] = { id, name, price, qty: 0 };
             }
             this.items[id].qty++;
+            
+            // Pridanie do posledných položiek bez filtrovania
+            this.recentItems.unshift({ id, name, price });
+            if (this.recentItems.length > 2) {
+                this.recentItems.pop(); // Odstránime najstaršiu položku
+            }
+            this.updateRecentDisplay();
+            
             this.updateDisplay();
         },
         
@@ -42,6 +51,26 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const total = Object.values(this.items).reduce((sum, item) => sum + (item.price * item.qty), 0);
             document.querySelector('.pos-total-amount').textContent = total.toFixed(2) + ' €';
+        },
+        
+        updateRecentDisplay() {
+            const container = document.getElementById('recent-items-container');
+            container.innerHTML = '';
+            
+            if (this.recentItems.length === 0) {
+                container.innerHTML = '<div class="pos-recent-item">Zatiaľ neboli pridané žiadne položky</div>';
+                return;
+            }
+            
+            this.recentItems.forEach(item => {
+                const element = document.createElement('div');
+                element.className = 'pos-recent-item';
+                element.innerHTML = `
+                    <div>${item.name}</div>
+                    <div>${item.price.toFixed(2)} €</div>
+                `;
+                container.appendChild(element);
+            });
         }
     };
 

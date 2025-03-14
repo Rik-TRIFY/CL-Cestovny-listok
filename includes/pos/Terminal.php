@@ -17,10 +17,12 @@ namespace CL\POS;
 class Terminal {
     private \CL\jadro\Databaza $databaza;
     private \CL\jadro\SpravcaNastaveni $spravca;
+    private \CL\jadro\SpravcaPrekladov $preklady; // Pridáme property
 
     public function __construct() {
         $this->databaza = new \CL\jadro\Databaza();
         $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
+        $this->preklady = \CL\jadro\SpravcaPrekladov::ziskajInstanciu(); // Inicializujeme v konštruktore
         add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'ajaxPridajDoKosika']);
         add_action('wp_ajax_cl_dokoncit_predaj', [$this, 'ajaxDokoncitPredaj']);
         add_action('wp_ajax_cl_nacitaj_predaje', [$this, 'ajaxNacitajPosledne']);
@@ -30,6 +32,7 @@ class Terminal {
         add_action('wp_ajax_cl_get_ticket_html', [$this, 'ajaxGetTicketHtml']);
         add_action('wp_ajax_cl_reprint_ticket', [$this, 'ajaxReprintTicket']);
         add_action('wp_ajax_cl_close_shift', [$this, 'ajaxCloseShift']);
+        add_action('wp_ajax_cl_tlac_denny_report', [$this, 'ajaxTlacDennyReport']);
     }
 
     public function pridajAssets(): void {
@@ -109,14 +112,8 @@ class Terminal {
         // Načítanie a spracovanie šablóny
         $sablona = $this->nacitajSablonuTerminalu();
         
-        // Nahradzovanie placeholderov
+        // Nahradzovanie placeholderov - používame len SpravcaPrekladov
         $app_name = $this->spravca->nacitaj('pos_app_name', 'POSka - Cestovné lístky');
-        $recently_added_label = $this->spravca->nacitaj('pos_recently_added_label', 'Naposledy pridané');
-        $goto_cart_button = $this->spravca->nacitaj('pos_goto_cart_button', 'Prejsť do košíka');
-        $cart_title = $this->spravca->nacitaj('pos_cart_title', 'Košík');
-        $total_sum_label = $this->spravca->nacitaj('pos_total_sum_label', 'SUMA CELKOM');
-        $back_button = $this->spravca->nacitaj('pos_back_button', 'Vrátiť späť');
-        $checkout_button = $this->spravca->nacitaj('pos_checkout_button', 'ULOŽIŤ a TLAČ');
         
         // Nahradenie placeholderov v šablóne skutočnými údajmi
         $sablona = str_replace(
@@ -137,15 +134,33 @@ class Terminal {
                 esc_html($user_initials),
                 $this->generujTlacidlaListkov($listky),
                 esc_html($app_name),
-                esc_html($recently_added_label),
-                esc_html($goto_cart_button),
-                esc_html($cart_title),
-                esc_html($total_sum_label),
-                esc_html($back_button),
-                esc_html($checkout_button)
+                esc_html($this->preklady->nacitaj('recently_added', 'Naposledy pridané')),
+                esc_html($this->preklady->nacitaj('button_cart', 'KOŠÍK')),
+                esc_html($this->preklady->nacitaj('cart_title', 'Košík')),
+                esc_html($this->preklady->nacitaj('total_sum', 'SPOLU:')),
+                esc_html($this->preklady->nacitaj('button_back', 'bbNASPÄŤ')),
+                esc_html($this->preklady->nacitaj('button_checkout', 'DOKONČIŤ A TLAČIŤ'))
             ],
             $sablona
         );
+        
+        wp_localize_script('cl-pos', 'cl_preklady', [
+            'button_back' => $this->preklady->nacitaj('button_back', 'aaNASPÄŤ'),
+            'button_add' => $this->preklady->nacitaj('button_add', 'PRIDAŤ DO KOŠÍKA'),
+            'button_cart' => $this->preklady->nacitaj('button_cart', 'KOŠÍK'),
+            'button_checkout' => $this->preklady->nacitaj('button_checkout', 'DOKONČIŤ A TLAČIŤ'),
+            'cart_empty' => $this->preklady->nacitaj('cart_empty', 'Košík je prázdny'),
+            'cart_title' => $this->preklady->nacitaj('cart_title', 'Košík'),
+            'total_sum' => $this->preklady->nacitaj('total_sum', 'SPOLU:'),
+            'previous_tickets' => $this->preklady->nacitaj('previous_tickets', 'Predchádzajúce lístky'),
+            'menu' => $this->preklady->nacitaj('menu', 'Menu'),
+            'view_ticket' => $this->preklady->nacitaj('view_ticket', 'Zobraziť'),
+            'print_ticket' => $this->preklady->nacitaj('print_ticket', 'Tlačiť znova'),
+            'no_previous_tickets' => $this->preklady->nacitaj('no_previous_tickets', 'Zatiaľ neboli pridané žiadne lístky'),
+            'close_shift' => $this->preklady->nacitaj('close_shift', 'Uzatvoriť zmenu'),
+            'confirm_close_shift' => $this->preklady->nacitaj('confirm_close_shift', 'Naozaj chcete uzatvoriť zmenu?'),
+            'confirm_reprint' => $this->preklady->nacitaj('confirm_reprint', 'Naozaj chcete znovu vytlačiť tento lístok?')
+        ]);
         
         echo $sablona;
     }
@@ -219,24 +234,37 @@ class Terminal {
         ]);
     }
 
-    private function generujCisloListka(): string {
-        $datum = date('Ymd');
+    private function generujCisloPredaja(): string {
+        // Získanie aktuálneho dátumu vo formáte RRMMDD
+        $datum = date('ymd'); // y = rok dvojciferný, m = mesiac, d = deň
+        
+        // Získanie prvých 3 písmen užívateľského mena
+        $current_user = wp_get_current_user();
+        $username = substr(strtoupper($current_user->user_login), 0, 3);
+        
+        // Formát: RRMMDDXXX-0001
+        $zaklad = $datum . $username;
         $poradie = 1;
         
-        global $wpdb;
-        $posledny = $wpdb->get_var($wpdb->prepare(
-            "SELECT cislo_predaja FROM `CL-predaj` 
+        // Nájdeme posledný predaj pre daného používateľa v daný deň
+        $posledny = $this->databaza->nacitajPole(
+            "SELECT cislo_predaja 
+             FROM `{$wpdb->prefix}cl_predaj` 
              WHERE cislo_predaja LIKE %s 
-             ORDER BY cislo_predaja DESC LIMIT 1",
-            "$datum-%"
-        ));
+             AND DATE(datum_predaja) = CURDATE()
+             ORDER BY cislo_predaja DESC 
+             LIMIT 1",
+            [$zaklad . '-%']
+        );
         
-        if ($posledny) {
-            list(, $cislo) = explode('-', $posledny);
-            $poradie = intval($cislo) + 1;
+        if (!empty($posledny)) {
+            // Extrahujeme posledné poradové číslo
+            $casti = explode('-', $posledny[0]['cislo_predaja']);
+            $poradie = intval(end($casti)) + 1;
         }
         
-        return sprintf('%s-%04d', $datum, $poradie);
+        // Vrátime nové číslo predaja vo formáte RRMMDDXXX-0001
+        return sprintf('%s-%04d', $zaklad, $poradie);
     }
 
     private function kontrolaPredaja(array $polozky): bool {
@@ -379,32 +407,6 @@ class Terminal {
             $wpdb->query('ROLLBACK');
             wp_send_json_error($e->getMessage());
         }
-    }
-
-    public function dokoncitPredaj(): void {
-        check_ajax_referer('cl_pos_nonce', 'nonce');
-        
-        if (!is_user_logged_in()) {
-            wp_send_json_error('Nie ste prihlásený');
-            return;
-        }
-
-        $items = json_decode(stripslashes($_POST['items']), true);
-        if (empty($items)) {
-            wp_send_json_error('Prázdny košík');
-            return;
-        }
-
-        // TODO: Logika pre uloženie predaja do DB
-        
-        wp_send_json_success([
-            'html' => $this->generujHTML($items)
-        ]);
-    }
-
-    private function generujHTML(array $items): string {
-        // TODO: Generovanie HTML pre tlač
-        return '<h1>Test tlače</h1>';
     }
 
     public function ajaxPridajDoKosika(): void {
@@ -737,6 +739,43 @@ class Terminal {
         wp_send_json_success(['report' => $html]);
     }
 
+    public function ajaxTlacDennyReport(): void {
+        if (!wp_verify_nonce($_POST['nonce'], 'cl_pos_nonce')) {
+            wp_send_json_error('Neplatný bezpečnostný token');
+            return;
+        }
+
+        if (!isset($_POST['den'])) {
+            wp_send_json_error('Chýba parameter den');
+            return;
+        }
+
+        $den = sanitize_text_field($_POST['den']);
+        
+        // Získanie súhrnných údajov o predaji za daný deň
+        $sumar = $this->databaza->nacitaj(
+            "SELECT 
+                t.nazov,
+                SUM(pp.pocet) as pocet,
+                SUM(pp.pocet * pp.cena_za_kus) as suma
+            FROM `{$wpdb->prefix}cl_predaj` p
+            JOIN `{$wpdb->prefix}cl_polozky_predaja` pp ON p.id = pp.predaj_id
+            JOIN `{$wpdb->prefix}cl_typy_listkov` t ON pp.typ_listka_id = t.id
+            WHERE DATE(p.datum_predaja) = %s
+            AND p.storno = 0
+            GROUP BY t.id
+            ORDER BY t.nazov",
+            [$den]
+        );
+
+        $celkova_suma = array_sum(array_column($sumar, 'suma'));
+        
+        // Generovanie HTML pre tlač
+        $html = $this->generujReportHtml($sumar, $celkova_suma);
+
+        wp_send_json_success(['html' => $html]);
+    }
+
     private function nacitajHtmlListka(string $cislo_listka): string {
         $subor = CL_PREDAJ_DIR . 'listok-' . $cislo_listka . '.html';
         if (!file_exists($subor)) {
@@ -768,5 +807,48 @@ class Terminal {
         $html .= '</body></html>';
         
         return $html;
+    }
+
+    private function dokoncitPredaj(array $polozky): array {
+        try {
+            // Kontrola košíka
+            $this->kontrolaPredaja($polozky);
+            
+            // Vygenerovanie čísla predaja
+            $cislo_predaja = $this->generujCisloPredaja();
+            
+            // Vloženie hlavičky predaja
+            $predaj_id = $this->vlozHlavickuPredaja($cislo_predaja, $polozky);
+            
+            // Vloženie položiek predaja
+            $this->vlozPolozkyPredaja($predaj_id, $polozky);
+            
+            // Vygenerovanie HTML lístka
+            $html = $this->generujHtmlListok($cislo_predaja, $polozky);
+            
+            // Uloženie HTML súboru
+            $html_path = CL_PREDAJ_DIR . "listok-{$cislo_predaja}.html";
+            file_put_contents($html_path, $html);
+            
+            // Simulácia generovania PDF
+            $pdf_path = CL_PREDAJ_DIR . "listok-{$cislo_predaja}.pdf";
+            file_put_contents($pdf_path, "Simulovaný PDF lístok pre číslo: $cislo_predaja");
+            
+            // Log o vytvorení lístkov
+            error_log("Vytvorené súbory pre lístok $cislo_predaja:");
+            error_log("HTML: $html_path");
+            error_log("PDF: $pdf_path");
+            
+            // Vrátime údaje o predaji
+            return [
+                'cislo_predaja' => $cislo_predaja,
+                'url_listka' => CL_PLUGIN_URL . "includes/predaj/listok-{$cislo_predaja}.html",
+                'poznamka' => "TESTOVACÍ REŽIM: Lístok bol uložený ako HTML a PDF (bez skutočnej tlače)",
+                'success' => true
+            ];
+        } catch (\Exception $e) {
+            error_log("Chyba pri dokončení predaja: " . $e->getMessage());
+            throw $e;
+        }
     }
 }

@@ -3,20 +3,84 @@
     display: flex;
     gap: 10px;
     align-items: center;
+    background: white;
+    padding: 15px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.cl-historia-filter input[type="date"] {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.cl-storno, .cl-aktivne {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
 }
 
 .cl-storno {
     color: #dc3232;
     font-weight: bold;
+    background: #ffd2d2;
 }
 
 .cl-aktivne {
     color: #46b450;
     font-weight: bold;
+    background: #d1e8d1;
 }
 
 .cl-pagination {
     margin-top: 20px;
     display: flex;
     gap: 5px;
+    padding: 10px 0;
+}
+
+.cl-pagination .button {
+    margin: 0 2px;
+}
+
+/* Vylepšenia pre tabuľku */
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+.wp-list-table .button {
+    margin: 0 5px;
+}
+
+/* Tlačidlá akcií */
+.wp-list-table .button {
+    padding: 4px 8px;
+    height: auto;
+    min-height: 30px;
+}
+
+.cl-tlac-listok {
+    background: #2271b1;
+    color: white;
+    border-color: #2271b1;
+}
+
+.cl-tlac-listok:hover {
+    background: #135e96;
+    color: white;
+    border-color: #135e96;
+}
+
+.cl-storno-predaja {
+    background: #dc3232;
+    color: white;
+    border-color: #dc3232;
+}
+
+.cl-storno-predaja:hover {
+    background: #ba2020;
+    color: white;
+    border-color: #ba2020;
 }

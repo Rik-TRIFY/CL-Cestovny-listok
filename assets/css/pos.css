@@ -620,12 +620,15 @@
 }
 
 .pos-cart-header {
-    background: var(--primary-color, #0073aa);
+    background: #E31E25 !important;
     color: white;
     padding: 10px 15px;
 }
 
 .pos-cart-header h2 {
+    color: #FFF !important;
+    letter-spacing: normal;
+    font-family: Arial, Helvetica, sans-serif;
     margin: 0;
     font-size: 16px;
 }
@@ -667,29 +670,34 @@
     min-width: 30px;
     text-align: center;
     font-weight: 500;
+    font-size: 16px;
 }
 
+/* Tlačidlá v košíku - nový dizajn */
 .pos-qty-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    width: auto;
+    min-width: 40px;
+    height: 35px;
+    border-radius: 4px;
     border: none;
-    background: #eee;
+    background: var(--primary-color, #2271b1);
+    color: white;
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background-color 0.2s;
 }
 
 .pos-qty-btn:hover {
-    background: #ddd;
+    background: var(--primary-hover, #135e96);
 }
 
+/* Odstránenie OK tlačidla */
 .pos-qty-btn.ok-btn {
-    background: #46b450;
-    color: white;
+    display: none;
 }
 
 .pos-cart-footer {
@@ -762,7 +770,7 @@
 .pos-back-btn {
     flex: 1;
     padding: 15px;
-    background: #eee;
+    background: #bd1111 !important;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -779,6 +787,26 @@
     font-weight: bold;
     cursor: pointer;
     font-size: 16px;
+}
+
+.pos-back-button {
+    display: inline-block;
+    padding: 12px 20px;
+    margin-bottom: 15px;
+    background: var(--primary-color, #2271b1);
+    color: white !important;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.pos-back-button:hover {
+    background: var(--primary-hover, #135e96);
+    color: white !important;
 }
 
 .pos-back-button {
@@ -997,6 +1025,14 @@
     justify-content: center;
     gap: 8px;
 }
+.pos-half-button#show-previous {
+    background: #bd1111;
+    color: white;
+}
+.pos-half-button#show-menu {
+    background: #304b42;
+    color: white;
+}
 
 .pos-half-button .ticket-count {
     background: rgba(255,255,255,0.2);
@@ -1015,17 +1051,20 @@
     height: 100%;
     background: rgba(0,0,0,0.5);
     z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .pos-modal-content {
-    position: relative;
     background: white;
-    margin: 20px auto;
+    margin: 0 auto;
     padding: 20px;
-    width: 90%;
+    width: 100%;
     max-width: 600px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: relative;
 }
 
 .pos-modal-header {
@@ -1037,35 +1076,140 @@
     border-bottom: 1px solid #eee;
 }
 
-.pos-menu-button {
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 10px;
-    border: none;
-    border-radius: 4px;
-    background: #f0f0f0;
+.pos-modal-close {
+    font-size: 24px;
+    font-weight: bold;
     cursor: pointer;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    padding: 5px 10px;
+    border: none;
+    background: none;
 }
 
-.pos-menu-button:hover {
-    background: #e0e0e0;
-}
-
-/* Zoznam predchádzajúcich lístkov */
+/* Vylepšené štýly pre položky predchádzajúcich lístkov */
 .previous-ticket-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
+    padding: 15px;
     border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.previous-ticket-item:hover {
+    background-color: #f8f9fa;
 }
 
 .previous-ticket-info {
     flex: 1;
+}
+
+.previous-ticket-info strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.previous-ticket-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.view-button, 
+.reprint-button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.view-button {
+    background: #e9ecef;
+    color: #333;
+}
+
+.reprint-button {
+    background: #2271b1;
+    color: white;
+}
+
+.view-button:hover {
+    background: #dee2e6;
+}
+
+.reprint-button:hover {
+    background: #135e96;
+}
+
+/* Modal pre predchádzajúce lístky */
+.pos-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.pos-modal-content {
+    position: relative;
+    background: white;
+    width: 100%;
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.pos-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.pos-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.pos-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+/* Štýly pre položky predchádzajúcich lístkov */
+.previous-ticket-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+}
+
+.previous-ticket-info {
+    flex: 1;
+}
+
+.previous-ticket-info strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 5px;
 }
 
 .previous-ticket-actions {
@@ -1073,11 +1217,21 @@
     gap: 10px;
 }
 
+.view-button, 
 .reprint-button {
-    padding: 6px 12px;
-    background: #2271b1;
-    color: white;
+    padding: 8px 15px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-size: 14px;
+}
+
+.view-button {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.reprint-button {
+    background: #2271b1;
+    color: white;
 }

@@ -15,14 +15,43 @@ namespace CL\Admin;
 
 class Nastavenia {
     private \CL\jadro\SpravcaNastaveni $spravca;
+    private \CL\jadro\SpravcaPrekladov $preklady;
 
     public function __construct() {
         $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
+        $this->preklady = \CL\jadro\SpravcaPrekladov::ziskajInstanciu();
         add_action('admin_init', [$this, 'registrujNastavenia']);
-        // Odstránime nepotrebné hooku pre TinyMCE
-        // add_action('admin_enqueue_scripts', [$this, 'pridajMedia']);
-        // add_filter('mce_buttons', [$this, 'registrujTlacitka']);
-        // add_filter('mce_external_plugins', [$this, 'registrujPlugin']);
+        add_action('admin_menu', [$this, 'pridajStrankyNastaveni']);
+    }
+
+    public function pridajStrankyNastaveni(): void {
+        // Pridáme podstránku pre systémové nastavenia
+        add_submenu_page(
+            'cl-nastavenia', // Parent slug
+            'Systémové nastavenia', // Page title
+            'Systémové nastavenia', // Menu title
+            'manage_options', // Capability
+            'cl-system-settings', // Menu slug
+            [$this, 'zobrazSystemoveNastavenia'] // Callback function
+        );
+    }
+
+    public function zobrazSystemoveNastavenia(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die('Nedostatočné oprávnenia');
+        }
+        ?>
+        <div class="wrap">
+            <h1>Systémové nastavenia</h1>
+            <form method="post" action="options.php">
+                <?php 
+                settings_fields('cl_system_settings');
+                do_settings_sections('cl_system_settings');
+                submit_button();
+                ?>
+            </form>
+        </div>
+        <?php
     }
 
     public function pridajMedia($hook): void {
@@ -118,7 +147,14 @@ class Nastavenia {
             'log_level' => ['Úroveň logovania', 'zobrazInputLogLevel'],
             'cache_lifetime' => ['Životnosť cache', 'zobrazInputCacheLifetime'],
             'session_timeout' => ['Timeout sedenia', 'zobrazInputSessionTimeout'],
-            'max_pokusov' => ['Max. počet pokusov', 'zobrazInputMaxPokusov']
+            'max_pokusov' => ['Max. počet pokusov', 'zobrazInputMaxPokusov'],
+            // Pridáme nové polia pre texty tlačidiel
+            'button_back' => ['Text tlačidla "Späť"', 'zobrazInputButtonBack'],
+            'button_add' => ['Text tlačidla "Pridať do košíka"', 'zobrazInputButtonAdd'],
+            'button_cart' => ['Text tlačidla "Košík"', 'zobrazInputButtonCart'],
+            'button_checkout' => ['Text tlačidla "Dokončiť"', 'zobrazInputButtonCheckout'],
+            'cart_empty' => ['Text prázdneho košíka', 'zobrazInputCartEmpty'],
+            'cart_title' => ['Nadpis košíka', 'zobrazInputCartTitle']
         ];
 
         // POS Nastavenia
@@ -179,6 +215,81 @@ class Nastavenia {
                 'cl_sekcia_pos'
             );
         }
+
+        // Texty tlačidiel
+        register_setting('cl_system_settings', 'cl_button_back');
+        register_setting('cl_system_settings', 'cl_button_add_to_cart');
+        register_setting('cl_system_settings', 'cl_button_checkout');
+
+        // Registrácia systémových nastavení
+
+        add_settings_section(
+            'cl_system_buttons_section',
+            'Texty tlačidiel',
+            function() {
+                echo '<p>Tu môžete upraviť texty tlačidiel používané v aplikácii.</p>';
+            },
+            'cl-nastavenia'  // Zmeníme z 'cl_system_settings' na 'cl-nastavenia'
+        );
+
+        // Registrujeme polia pre texty tlačidiel v sekcii system
+        add_settings_field(
+            'cl_button_back',
+            'Tlačidlo "Späť"',
+            [$this, 'zobrazInputButtonBack'],
+            'cl-nastavenia',
+            'cl_sekcia_system'
+        );
+
+        add_settings_field(
+            'cl_button_add_to_cart',
+            'Tlačidlo "Do košíka"',
+            [$this, 'zobrazInputButtonAddToCart'],
+            'cl-nastavenia',
+            'cl_sekcia_system'
+        );
+
+        add_settings_field(
+            'cl_button_checkout',
+            'Tlačidlo "Dokončiť"',
+            [$this, 'zobrazInputButtonCheckout'],
+            'cl-nastavenia',
+            'cl_sekcia_system'
+        );
+
+        // Registrujeme nastavenia
+        register_setting('cl_nastavenia', 'cl_button_back');
+        register_setting('cl_nastavenia', 'cl_button_add_to_cart');
+        register_setting('cl_nastavenia', 'cl_button_checkout');
+
+        // Systémové nastavenia
+        add_settings_section(
+            'cl_sekcia_system',
+            'Systémové nastavenia',
+            [$this, 'zobrazSekciuSystem'],
+            'cl-nastavenia'
+        );
+
+        // Registrácia polí pre preklady
+        $preklady = [
+            'button_back' => 'Text tlačidla "Späť"',
+            'button_add' => 'Text tlačidla "Pridať do košíka"',
+            'button_cart' => 'Text tlačidla "Košík"',
+            'button_checkout' => 'Text tlačidla "Dokončiť"',
+            'cart_empty' => 'Text prázdneho košíka',
+            'cart_title' => 'Nadpis košíka'
+        ];
+
+        foreach ($preklady as $kluc => $popis) {
+            add_settings_field(
+                'cl_' . $kluc,
+                $popis,
+                [$this, 'zobrazInputPreklad'],
+                'cl-nastavenia',
+                'cl_sekcia_system',
+                ['kluc' => $kluc]
+            );
+        }
     }
 
     /**
@@ -210,7 +321,35 @@ class Nastavenia {
                 // Uložíme hodnotu bez prefixu záložky
                 $this->spravca->uloz($key, $value);
             }
+
+            // Uložíme preklady do novej tabuľky
+            if (isset($input['button_back'])) {
+                $this->preklady->uloz('button_back', $input['button_back']);
+            }
+            if (isset($input['button_add'])) {
+                $this->preklady->uloz('button_add', $input['button_add']);
+            }
+            if (isset($input['button_cart'])) {
+                $this->preklady->uloz('button_cart', $input['button_cart']);
+            }
+            if (isset($input['button_checkout'])) {
+                $this->preklady->uloz('button_checkout', $input['button_checkout']);
+            }
+            if (isset($input['cart_empty'])) {
+                $this->preklady->uloz('cart_empty', $input['cart_empty']);
+            }
+            if (isset($input['cart_title'])) {
+                $this->preklady->uloz('cart_title', $input['cart_title']);
+            }
             
+            // Spracovanie prekladov
+            if (isset($input['preklady']) && is_array($input['preklady'])) {
+                foreach ($input['preklady'] as $kluc => $hodnota) {
+                    $this->preklady->uloz($kluc, $hodnota);
+                }
+                unset($input['preklady']);
+            }
+
             return true;
         } catch (\Exception $e) {
             error_log('CL Plugin - Chyba pri ukladaní nastavení: ' . $e->getMessage());
@@ -621,6 +760,87 @@ class Nastavenia {
     public function registrujPlugin($plugins) {
         $plugins['cl_variables'] = CL_ASSETS_URL . 'js/tinymce-plugin.js';
         return $plugins;
+    }
+
+    public function zobrazInputButtonBack(): void {
+        $text = $this->preklady->nacitaj('button_back', 'NASPÄŤ');
+        ?>
+        <input type="text" 
+               name="cl_nastavenia[button_back]" 
+               value="<?php echo esc_attr($text); ?>" 
+               class="regular-text">
+        <p class="description">Text tlačidla pre návrat späť</p>
+        <?php
+    }
+
+    public function zobrazInputButtonAddToCart(): void {
+        $text = $this->preklady->nacitaj('button_add_to_cart', 'DO KOŠÍKA');
+        ?>
+        <input type="text" name="cl_nastavenia[button_add_to_cart]" value="<?php echo esc_attr($text); ?>" class="regular-text">
+        <?php
+    }
+
+    public function zobrazInputButtonCheckout(): void {
+        $text = $this->preklady->nacitaj('button_checkout', 'DOKONČIŤ');
+        ?>
+        <input type="text" name="cl_nastavenia[button_checkout]" value="<?php echo esc_attr($text); ?>" class="regular-text">
+        <?php
+    }
+
+    public function zobrazInputButtonAdd(): void {
+        $text = $this->preklady->nacitaj('button_add', 'PRIDAŤ DO KOŠÍKA');
+        ?>
+        <input type="text" 
+               name="cl_nastavenia[button_add]" 
+               value="<?php echo esc_attr($text); ?>" 
+               class="regular-text">
+        <p class="description">Text tlačidla pre pridanie položky do košíka</p>
+        <?php
+    }
+
+    public function zobrazInputButtonCart(): void {
+        $text = $this->preklady->nacitaj('button_cart', 'KOŠÍK');
+        ?>
+        <input type="text" 
+               name="cl_nastavenia[button_cart]" 
+               value="<?php echo esc_attr($text); ?>" 
+               class="regular-text">
+        <p class="description">Text tlačidla pre zobrazenie košíka</p>
+        <?php
+    }
+
+    public function zobrazInputCartEmpty(): void {
+        $text = $this->preklady->nacitaj('cart_empty', 'Košík je prázdny');
+        ?>
+        <input type="text" 
+               name="cl_nastavenia[cart_empty]" 
+               value="<?php echo esc_attr($text); ?>" 
+               class="regular-text">
+        <p class="description">Text zobrazený pri prázdnom košíku</p>
+        <?php
+    }
+
+    public function zobrazInputCartTitle(): void {
+        $text = $this->preklady->nacitaj('cart_title', 'Košík');
+        ?>
+        <input type="text" 
+               name="cl_nastavenia[cart_title]" 
+               value="<?php echo esc_attr($text); ?>" 
+               class="regular-text">
+        <p class="description">Nadpis sekcie košíka</p>
+        <?php
+    }
+
+    // Nová metóda pre zobrazenie input poľa prekladu
+    public function zobrazInputPreklad($args): void {
+        $kluc = $args['kluc'];
+        $hodnota = $this->preklady->nacitaj($kluc, '');
+        ?>
+        <input type="text" 
+               name="cl_nastavenia[preklady][<?php echo esc_attr($kluc); ?>]" 
+               value="<?php echo esc_attr($hodnota); ?>" 
+               class="regular-text">
+        <?php
     }
 
     private function getDefaultTemplate(): string {

@@ -40,6 +40,10 @@ $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
                class="nav-tab <?php echo $active_tab === 'pos' ? 'nav-tab-active' : ''; ?>">
                 POS Terminál
             </a>
+            <a href="?page=cl-nastavenia&tab=preklady" 
+               class="nav-tab <?php echo $active_tab === 'preklady' ? 'nav-tab-active' : ''; ?>">
+                Nastavenie prekladov
+            </a>
         </nav>
 
         <div class="tab-content">
@@ -170,6 +174,13 @@ $spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
                     </div>
                     <?php
                     break;
+
+                case 'preklady':
+                    include CL_INCLUDES_DIR . 'admin/pohlady/nastavenia-preklady.php';
+                    break;
+
+                default:
+                    // ...existing code...
             }
             ?>
         </div>

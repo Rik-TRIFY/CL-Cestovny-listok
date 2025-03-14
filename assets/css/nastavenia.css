@@ -490,3 +490,19 @@ textarea.code {
         margin: 0 auto;
     }
 }
+
+/* Sekcia systémových nastavení */
+.cl_sekcia_system .form-table th {
+    min-width: 200px;
+}
+
+.cl_sekcia_system .form-table td input[type="text"] {
+    width: 100%;
+    max-width: 300px;
+}
+
+.cl_sekcia_system .description {
+    margin-top: 5px;
+    color: #666;
+    font-style: italic;
+}
