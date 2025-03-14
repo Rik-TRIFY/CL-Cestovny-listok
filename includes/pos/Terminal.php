@@ -15,12 +15,12 @@ declare(strict_types=1);
 namespace CL\POS;
 
 class Terminal {
-    private \CL\Jadro\Databaza $databaza;
-    private \CL\Jadro\SpravcaNastaveni $spravca;
+    private \CL\jadro\Databaza $databaza;
+    private \CL\jadro\SpravcaNastaveni $spravca;
 
     public function __construct() {
-        $this->databaza = new \CL\Jadro\Databaza();
-        $this->spravca = \CL\Jadro\SpravcaNastaveni::ziskajInstanciu();
+        $this->databaza = new \CL\jadro\Databaza();
+        $this->spravca = \CL\jadro\SpravcaNastaveni::ziskajInstanciu();
         add_action('wp_ajax_cl_pridaj_do_kosika', [$this, 'ajaxPridajDoKosika']);
         add_action('wp_ajax_cl_dokoncit_predaj', [$this, 'ajaxDokoncitPredaj']);
         add_action('wp_ajax_cl_nacitaj_predaje', [$this, 'ajaxNacitajPosledne']);
@@ -48,12 +48,59 @@ class Terminal {
         $current_user = wp_get_current_user();
         $user_initials = mb_substr($current_user->display_name, 0, 1);
         
-        // Získanie dostupných typov lístkov
-        $listky = $this->databaza->nacitaj(
-            "SELECT * FROM `{$GLOBALS['wpdb']->prefix}cl_typy_listkov` 
-             WHERE aktivny = 1 
-             ORDER BY poradie ASC, nazov ASC"
-        );
+        // Priame načítanie lístkov z databázy s opravenými názvami tabuliek
+        global $wpdb;
+        
+        // Kontrola, či existuje stĺpec 'poradie'
+        $check_column = $wpdb->get_results("SHOW COLUMNS FROM `{$wpdb->prefix}cl_typy_listkov` LIKE 'poradie'");
+        
+        // Príprava SQL dotazu
+        $table_name = $wpdb->prefix . 'cl_typy_listkov';
+        
+        // Ak stĺpec poradie existuje, použijeme ho na zoradenie
+        if (!empty($check_column)) {
+            $sql = "SELECT * FROM `{$table_name}` WHERE aktivny = '1' ORDER BY poradie ASC, nazov ASC";
+        } else {
+            $sql = "SELECT * FROM `{$table_name}` WHERE aktivny = '1' ORDER BY nazov ASC";
+            
+            // Pridáme stĺpec poradie do tabuľky
+            $wpdb->query("ALTER TABLE `{$table_name}` ADD COLUMN `poradie` int(11) DEFAULT 0 AFTER `aktivny`");
+            
+            // Po pridaní stĺpca aktualizujeme SQL dotaz
+            $sql = "SELECT * FROM `{$table_name}` WHERE aktivny = '1' ORDER BY poradie ASC, nazov ASC";
+        }
+        
+        // Získanie záznamov s explicitnou kontrolou hodnoty aktivny ako string '1'
+        $listky = $wpdb->get_results($sql);
+        
+        // Debug: Kontrola počtu vrátených záznamov
+        if ($wpdb->last_error) {
+            echo '<div class="cl-debug-info">SQL Error: ' . esc_html($wpdb->last_error) . '</div>';
+        }
+        
+        // Zobrazenie všetkých lístkov aj neaktívnych pre diagnostiku
+        if (empty($listky)) {
+            echo '<div class="cl-debug-info">Neboli nájdené žiadne aktívne lístky v tabuľke ' . 
+                esc_html($table_name) . '.</div>';
+            
+            // Skúsime načítať všetky lístky bez filtrovania
+            $all_tickets = $wpdb->get_results("SELECT id, nazov, cena, aktivny FROM `{$table_name}`");
+            
+            if (!empty($all_tickets)) {
+                echo '<div class="cl-debug-info">Našli sme ' . count($all_tickets) . 
+                     ' lístkov bez filtrovania aktivny. Tu sú:</div>';
+                echo '<ul class="cl-debug-list">';
+                foreach ($all_tickets as $ticket) {
+                    echo '<li>ID: ' . $ticket->id . ', Názov: ' . $ticket->nazov . 
+                         ', Cena: ' . $ticket->cena . ', Aktivny: [' . var_export($ticket->aktivny, true) . ']' . 
+                         ' (Typ: ' . gettype($ticket->aktivny) . ')</li>';
+                }
+                echo '</ul>';
+                
+                // Skúsime použiť tieto lístky namiesto filtrovania
+                $listky = $all_tickets;
+            }
+        }
         
         // Načítanie a spracovanie šablóny
         $sablona = $this->nacitajSablonuTerminalu();
@@ -115,15 +162,15 @@ class Terminal {
         
         foreach ($listky as $listok) {
             $html .= sprintf(
-                '<div class="cl-terminal-btn cl-ticket-btn" data-id="%d" data-nazov="%s" data-cena="%s">
-                    <span class="nazov">%s</span>
-                    <span class="cena">%s €</span>
+                '<div class="pos-product cl-ticket-btn" data-id="%d" data-nazov="%s" data-cena="%.2f">
+                    <div class="pos-product-name">%s</div>
+                    <div class="pos-product-price">%.2f €</div>
                 </div>',
                 $listok->id,
                 esc_attr($listok->nazov),
-                number_format((float)$listok->cena, 2),
+                (float)$listok->cena,
                 esc_html($listok->nazov),
-                number_format((float)$listok->cena, 2)
+                (float)$listok->cena
             );
         }
         
@@ -141,7 +188,7 @@ class Terminal {
         $typ_listka_id = (int)$_POST['typ_listka_id'];
         $pocet = max(1, (int)$_POST['pocet']);
         
-        $listok = $this->databaza->nacitaj(
+        $listok = $this->databaza->nacitajPole(
             "SELECT * FROM `CL-typy_listkov` WHERE id = %d AND aktivny = TRUE",
             [$typ_listka_id]
         );
@@ -185,7 +232,7 @@ class Terminal {
         }
 
         foreach ($polozky as $polozka) {
-            $listok = $this->databaza->nacitaj(
+            $listok = $this->databaza->nacitajPole(
                 "SELECT * FROM `CL-typy_listkov` WHERE id = %d AND aktivny = TRUE",
                 [$polozka['id']]
             );
@@ -203,7 +250,7 @@ class Terminal {
         
         $polozky = json_decode(stripslashes($_POST['polozky']), true);
         $celkova_suma = 0;
-        $spravca = new \CL\Jadro\SpravcaSuborov();
+        $spravca = new \CL\jadro\SpravcaSuborov();
         
         global $wpdb;
         $wpdb->query('START TRANSACTION');
@@ -471,7 +518,7 @@ class Terminal {
             $wpdb->query('COMMIT');
             
             // Logger
-            $spravca_log = new \CL\Jadro\SpravcaSuborov();
+            $spravca_log = new \CL\jadro\SpravcaSuborov();
             $spravca_log->zapisDoLogu('PREDAJ', [
                 'cislo_predaja' => $cislo_listka,
                 'predajca_id' => get_current_user_id(),
@@ -489,7 +536,7 @@ class Terminal {
             $wpdb->query('ROLLBACK');
             
             // Logger
-            $spravca_log = new \CL\Jadro\SpravcaSuborov();
+            $spravca_log = new \CL\jadro\SpravcaSuborov();
             $spravca_log->zapisDoLogu('PREDAJ_ERROR', [
                 'error' => $e->getMessage(),
                 'data' => [

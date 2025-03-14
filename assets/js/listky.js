@@ -1,308 +1,237 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Filtre pre lístky
-    const vyhladavanie = document.getElementById('vyhladavanie');
-    const filterTrieda = document.getElementById('filter-trieda');
-    const filterSkupina = document.getElementById('filter-skupina');
+jQuery(document).ready(function($) {
+    // Kontrola a nastavenie AJAX URL
+    if (typeof ajaxurl === 'undefined') {
+        window.ajaxurl = '/wp-admin/admin-ajax.php';
+        console.warn('ajaxurl nebol definovaný, použitá predvolená hodnota');
+    }
     
-    function nacitajListky(filter = '') {
-        fetch(ajaxurl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+    // Kontrola cl_admin objektu
+    if (typeof cl_admin === 'undefined') {
+        window.cl_admin = {
+            nonce: '',
+            version: '1.0.0'
+        };
+        console.error('cl_admin nie je definovaný! AJAX požiadavky budú pravdepodobne zlyhávať.');
+    }
+    
+    console.log('Listky.js načítaný');
+    console.log('AJAX URL:', ajaxurl);
+    console.log('cl_admin objekt:', cl_admin);
+    
+    console.log('Listky.js načítaný - verzia:', cl_admin.version);
+    console.log('jQuery verzia:', $.fn.jquery);
+    
+    // Kontrola dostupnosti cl_admin
+    if (!cl_admin) {
+        console.error('CHYBA: cl_admin nie je definovaný!');
+        alert('Kritická chyba: Chýbajúca konfigurácia. Kontaktujte administrátora.');
+        return;
+    }
+    
+    // Základné nastavenie AJAX URL - dôležité prvé overenie s debug výpisom
+    const ajax_url = cl_admin.ajaxurl;
+    console.log('AJAX URL:', ajax_url);
+    console.log('Nonce hodnota:', cl_admin.nonce);
+
+    // Otvoriť modálne okno pre pridanie nového lístka
+    $(document).on('click', '#pridat-listok', function(e) {
+        console.log('Kliknutie na pridať lístok');
+        $('#modal-title').text('Pridať nový lístok');
+        $('#listok-id').val('');
+        $('#listok-nazov').val('');
+        $('#listok-text').val('');
+        $('#listok-cena').val('');
+        $('#listok-poradie').val('0');
+        $('#listok-modal').show();
+    });
+
+    // Zatvoriť modálne okno - použitie delegovaných eventov
+    $(document).on('click', '.cl-modal-close, .cl-modal-zrusit', function() {
+        console.log('Zatváranie modálneho okna');
+        $('#listok-modal').hide();
+    });
+    
+    // Zavrieť modal aj pri kliknutí mimo neho - použitie delegovaného eventu
+    $(document).on('click', '#listok-modal', function(e) {
+        if ($(e.target).is('#listok-modal')) {
+            console.log('Klik mimo modálneho okna - zatváranie');
+            $('#listok-modal').hide();
+        }
+    });
+
+    // Odoslanie formulára - použitie delegovaného eventu
+    $(document).on('submit', '#listok-formular', function(e) {
+        e.preventDefault();
+        console.log('Odosielanie formulára');
+        
+        // Určenie, či ide o pridanie alebo úpravu lístka
+        const idVal = $('#listok-id').val();
+        const action = idVal ? 'cl_uprav_listok' : 'cl_pridaj_listok';
+        console.log('Typ akcie:', action);
+        
+        // Zbierka údajov s validáciou
+        const data = {
+            action: action,
+            nonce: cl_admin.nonce,
+            id: idVal,
+            nazov: $('#listok-nazov').val(),
+            text_listok: $('#listok-text').val(),
+            cena: $('#listok-cena').val(),
+            poradie: $('#listok-poradie').val() || 0
+        };
+        
+        console.log('Odosielané dáta:', data);
+        
+        // Odoslanie AJAX požiadavky s rozšírenou diagnostikou
+        $.ajax({
+            url: ajax_url,
+            type: 'POST',
+            data: data,
+            success: function(response) {
+                console.log('Odpoveď servera:', response);
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert('Chyba: ' + (response.data || 'Neznáma chyba'));
+                }
             },
-            body: new URLSearchParams({
-                action: 'cl_nacitaj_listky',
+            error: function(xhr, status, error) {
+                console.error('AJAX chyba:', error);
+                console.error('Status:', status);
+                console.error('Odpoveď:', xhr.responseText);
+                alert('Chyba pri komunikácii so serverom: ' + error);
+            }
+        });
+    });
+
+    // Prepínanie aktivity lístka - použitie delegovaného eventu
+    $(document).on('click', '.toggle-aktivny', function() {
+        const id = $(this).data('id');
+        const aktivny = $(this).data('aktivny') == 1 ? 0 : 1;
+        
+        console.log('Prepínanie aktivity pre ID:', id, 'na hodnotu:', aktivny);
+        
+        // AJAX požiadavka s rozšírenou diagnostikou
+        $.ajax({
+            url: ajax_url,
+            type: 'POST',
+            data: {
+                action: 'cl_prepni_aktivny',
                 nonce: cl_admin.nonce,
-                filter: filter
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('listky-zoznam').innerHTML = data.data;
-                aktualizujFiltreOptions(data.triedy, data.skupiny);
+                id: id,
+                aktivny: aktivny
+            },
+            success: function(response) {
+                console.log('Odpoveď servera:', response);
+                if (response.success) {
+                    location.reload(); // Po úspešnej zmene obnovíme stránku
+                } else {
+                    alert('Chyba: ' + (response.data || 'Neznáma chyba'));
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX chyba:', error);
+                console.error('Status:', status);
+                console.error('Odpoveď:', xhr.responseText);
+                alert('Chyba pri komunikácii so serverom: ' + error);
             }
         });
-    }
-
-    // Správa modal okna
-    const modal = document.getElementById('listok-modal');
-    const form = document.getElementById('listok-formular');
-    
-    // Otvorenie modalu pre nový lístok
-    document.getElementById('pridat-listok')?.addEventListener('click', function() {
-        form.reset();
-        document.getElementById('modal-title').textContent = 'Pridať nový lístok';
-        document.getElementById('listok-id').value = '';
-        modal.style.display = 'block';
-    });
-    
-    // Zatváranie modalu
-    document.querySelector('.cl-modal-close')?.addEventListener('click', () => modal.style.display = 'none');
-    document.querySelector('.cl-modal-zrusit')?.addEventListener('click', () => modal.style.display = 'none');
-    window.addEventListener('click', e => {
-        if (e.target === modal) modal.style.display = 'none';
     });
 
-    // Uloženie lístka
-    form?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const id = formData.get('id');
+    // Načítanie údajov pre úpravu - použitie delegovaného eventu
+    $(document).on('click', '.upravit-listok', function() {
+        const id = $(this).data('id');
+        console.log('Načítavanie údajov pre ID:', id);
         
-        fetch(ajaxurl, {
-            method: 'POST',
-            body: new URLSearchParams({
-                action: id ? 'cl_uprav_listok' : 'cl_pridaj_listok',
+        // AJAX požiadavka s dodatočným logovaním
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cl_nacitaj_listok',
                 nonce: cl_admin.nonce,
-                ...Object.fromEntries(formData)
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Chyba: ' + data.data);
-            }
-        });
-    });
-
-    function aktualizujFiltreOptions(triedy, skupiny) {
-        const triedaSelect = document.getElementById('filter-trieda');
-        const skupinaSelect = document.getElementById('filter-skupina');
-        
-        // Zachováme aktuálne vybrané hodnoty
-        const selectedTrieda = triedaSelect.value;
-        const selectedSkupina = skupinaSelect.value;
-        
-        // Vyčistíme a naplníme filtre
-        triedaSelect.innerHTML = '<option value="">Všetky triedy</option>';
-        skupinaSelect.innerHTML = '<option value="">Všetky skupiny</option>';
-        
-        triedy.forEach(trieda => {
-            if (trieda) {
-                const option = new Option(trieda, trieda);
-                if (trieda === selectedTrieda) option.selected = true;
-                triedaSelect.add(option);
-            }
-        });
-        
-        skupiny.forEach(skupina => {
-            if (skupina) {
-                const option = new Option(skupina, skupina);
-                if (skupina === selectedSkupina) option.selected = true;
-                skupinaSelect.add(option);
-            }
-        });
-    }
-
-    // Event listeners pre filtrovanie
-    let timeoutId;
-    document.getElementById('vyhladavanie').addEventListener('input', function() {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            nacitajListky(this.value);
-        }, 300);
-    });
-
-    ['filter-trieda', 'filter-skupina'].forEach(id => {
-        document.getElementById(id).addEventListener('change', function() {
-            nacitajListky(document.getElementById('vyhladavanie').value);
-        });
-    });
-
-    // Spustíme prvé načítanie
-    nacitajListky();
-
-    // Pridanie nového lístka
-    document.getElementById('novy-listok-form')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        formData.append('action', 'cl_pridaj_listok');
-        
-        fetch(ajaxurl, {
-            method: 'POST',
-            body: new URLSearchParams(formData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Chyba: ' + data.data);
-            }
-        })
-        .catch(error => {
-            console.error('Chyba:', error);
-            alert('Nastala chyba pri komunikácii so serverom');
-        });
-    });
-
-    // Aktivácia/Deaktivácia
-    document.querySelectorAll('.toggle-aktivny').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.dataset.id;
-            const novaHodnota = this.dataset.aktivny === '1' ? 0 : 1;
-            
-            fetch(ajaxurl, {
-                method: 'POST',
-                body: new URLSearchParams({
-                    action: 'cl_prepni_aktivny',
-                    nonce: cl_admin.nonce,
-                    id: id,
-                    aktivny: novaHodnota
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
+                id: id
+            },
+            beforeSend: function() {
+                console.log('Odosielam požiadavku pre ID:', id);
+                console.log('Nonce:', cl_admin.nonce);
+            },
+            success: function(response) {
+                console.log('Server response:', response);
+                if (response.success && response.data) {
+                    // Naplnenie modálneho okna údajmi o lístku
+                    $('#modal-title').text('Upraviť lístok');
+                    $('#listok-id').val(response.data.id);
+                    $('#listok-nazov').val(response.data.nazov);
+                    $('#listok-text').val(response.data.text_listok);
+                    $('#listok-cena').val(parseFloat(response.data.cena).toFixed(2));
+                    $('#listok-poradie').val(parseInt(response.data.poradie) || 0);
+                    
+                    // Zobrazenie modálneho okna
+                    $('#listok-modal').show();
+                    
+                    console.log('Modal naplnený dátami:', {
+                        id: response.data.id,
+                        nazov: response.data.nazov,
+                        text: response.data.text_listok,
+                        cena: response.data.cena,
+                        poradie: response.data.poradie
+                    });
                 } else {
-                    alert('Chyba: ' + data.data);
+                    alert('Chyba pri načítaní údajov o lístku');
+                    console.error('Neplatná odpoveď:', response);
                 }
-            });
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText
+                });
+                alert('Chyba pri načítaní údajov: ' + error);
+            }
         });
     });
 
-    // Úprava lístka
-    document.querySelectorAll('.upravit-listok').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.dataset.id;
-            
-            fetch(ajaxurl, {
-                method: 'POST',
-                body: new URLSearchParams({
-                    action: 'cl_nacitaj_listok',
-                    nonce: cl_admin.nonce,
-                    id: id
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('modal-title').textContent = 'Upraviť lístok';
-                    document.getElementById('listok-id').value = data.data.id;
-                    document.getElementById('listok-nazov').value = data.data.nazov;
-                    document.getElementById('listok-text').value = data.data.text_listok;
-                    document.getElementById('listok-cena').value = data.data.cena;
-                    modal.style.display = 'block';
-                }
-            });
-        });
-    });
-
-    // Mazanie lístka
-    document.querySelectorAll('.zmazat-listok').forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (!confirm('Naozaj chcete zmazať tento lístok?')) return;
-            
-            const id = this.dataset.id;
-            fetch(ajaxurl, {
-                method: 'POST',
-                body: new URLSearchParams({
-                    action: 'cl_zmaz_listok',
-                    nonce: cl_admin.nonce,
-                    id: id
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
+    // Mazanie lístka - použitie delegovaného eventu
+    $(document).on('click', '.zmazat-listok', function() {
+        if (!confirm('Naozaj chcete zmazať tento lístok?')) {
+            return;
+        }
+        
+        const id = $(this).data('id');
+        console.log('Mazanie lístka s ID:', id);
+        
+        // AJAX požiadavka s rozšírenou diagnostikou
+        $.ajax({
+            url: ajax_url,
+            type: 'POST',
+            data: {
+                action: 'cl_zmaz_listok',
+                nonce: cl_admin.nonce,
+                id: id
+            },
+            success: function(response) {
+                console.log('Odpoveď servera:', response);
+                if (response.success) {
+                    location.reload();
                 } else {
-                    alert('Chyba: ' + data.data);
+                    alert('Chyba: ' + (response.data || 'Neznáma chyba'));
                 }
-            });
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX chyba:', error);
+                console.error('Status:', status);
+                console.error('Odpoveď:', xhr.responseText);
+                alert('Chyba pri komunikácii so serverom: ' + error);
+            }
         });
     });
 
-    // Prepínač aktívny/neaktívny
-    document.querySelectorAll('.aktivny-switch').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const tr = this.closest('tr');
-            const id = tr.dataset.id;
-            
-            fetch(ajaxurl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    action: 'cl_prepni_aktivny',
-                    nonce: cl_admin.nonce,
-                    id: id,
-                    aktivny: this.checked ? 1 : 0
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    this.checked = !this.checked;
-                    alert('Chyba: ' + data.data);
-                }
-            });
-        });
-    });
-
-    // Úprava lístka
-    document.querySelectorAll('.edit-listok').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tr = this.closest('tr');
-            tr.querySelector('.listok-nazov').style.display = 'none';
-            tr.querySelector('.listok-nazov-edit').style.display = 'inline';
-            tr.querySelector('.listok-cena').style.display = 'none';
-            tr.querySelector('.listok-cena-edit').style.display = 'inline';
-            this.style.display = 'none';
-            tr.querySelector('.save-listok').style.display = 'inline-block';
-            tr.querySelector('.cancel-edit').style.display = 'inline-block';
-        });
-    });
-
-    // Zrušenie úprav
-    document.querySelectorAll('.cancel-edit').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tr = this.closest('tr');
-            tr.querySelector('.listok-nazov').style.display = 'inline';
-            tr.querySelector('.listok-nazov-edit').style.display = 'none';
-            tr.querySelector('.listok-cena').style.display = 'inline';
-            tr.querySelector('.listok-cena-edit').style.display = 'none';
-            this.style.display = 'none';
-            tr.querySelector('.save-listok').style.display = 'none';
-            tr.querySelector('.edit-listok').style.display = 'inline-block';
-        });
-    });
-
-    // Uloženie úprav
-    document.querySelectorAll('.save-listok').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tr = this.closest('tr');
-            const id = tr.dataset.id;
-            const nazov = tr.querySelector('.listok-nazov-edit').value;
-            const cena = tr.querySelector('.listok-cena-edit').value;
-
-            fetch(ajaxurl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    action: 'cl_uprav_listok',
-                    nonce: cl_admin.nonce,
-                    id: id,
-                    nazov: nazov,
-                    cena: cena
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert('Chyba: ' + data.data);
-                }
-            });
-        });
-    });
+    // Inicializačné kontroly
+    console.log('Kontrola modálneho okna:', $('#listok-modal').length ? 'OK' : 'Chýba!');
+    console.log('Kontrola formulára:', $('#listok-formular').length ? 'OK' : 'Chýba!');
+    console.log('Kontrola tlačidla Pridať:', $('#pridat-listok').length ? 'OK' : 'Chýba!');
+    console.log('Kontrola tlačidiel Upraviť:', $('.upravit-listok').length);
+    console.log('Kontrola tlačidiel Aktivovať/Deaktivovať:', $('.toggle-aktivny').length);
 });

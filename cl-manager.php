@@ -78,11 +78,21 @@ class CestovneListky {
     }
     
     private function inicializacia(): void {
+        // Inicializácia error handlera pre lepšiu diagnostiku
+        new jadro\ErrorHandler();
+        
+        // Pridáme SpravcaListkov do hlavnej inicializácie
+        new admin\SpravcaListkov();
+        
         $this->vytvorPriecinky();
         register_activation_hook(__FILE__, [$this, 'aktivacia']);
         add_action('admin_menu', [$this, 'adminMenu']);
         add_action('admin_enqueue_scripts', [$this, 'pridajAssets']);
         add_shortcode('pos_terminal', [$this, 'zobrazPOSTerminalShortcode']);
+        
+        // Pridané logovanie AJAX chýb
+        add_action('wp_ajax_nopriv_cl_log_error', [$this, 'logJavascriptError']);
+        add_action('wp_ajax_cl_log_error', [$this, 'logJavascriptError']);
         
         new jadro\Databaza();
         new admin\Nastavenia();
@@ -90,6 +100,10 @@ class CestovneListky {
         new admin\AdminRozhranie();
         new jadro\SpravcaVerzie();
         new jadro\Router();
+        
+        // Odstránené debug nástroje
+        // new admin\AjaxDebug();
+        // new admin\DirectAjaxTest();
     }
     
     private function vytvorPriecinky(): void {
@@ -155,7 +169,7 @@ class CestovneListky {
         $kontroler = new jadro\Kontroler();
         $kontroler->aktivujKontroly();
     }
-    
+        
     public function skontrolujPoziadavky(): bool {
         global $wp_version;
 
@@ -180,15 +194,56 @@ class CestovneListky {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
         
+        // Kontrola, či existuje stará tabuľka
+        $stara_tabulka = $wpdb->get_var("SHOW TABLES LIKE 'CL-typy_listkov'");
+        if ($stara_tabulka) {
+            // Skopírujme dáta zo starej tabuľky do novej
+            $rows = $wpdb->get_results("SELECT * FROM `CL-typy_listkov`", ARRAY_A);
+            
+            if (!empty($rows)) {
+                // Vytvoríme novú tabuľku
+                $wpdb->query("CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_typy_listkov` LIKE `CL-typy_listkov`");
+                
+                // Skontrolujeme, či existuje stĺpec poradie v starej tabuľke
+                $stary_poradie = $wpdb->get_results(
+                    "SHOW COLUMNS FROM `CL-typy_listkov` LIKE 'poradie'"
+                );
+                
+                if (empty($stary_poradie)) {
+                    // Pridáme stĺpec do novej tabuľky, ak neexistuje v starej
+                    $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_typy_listkov` 
+                                 ADD COLUMN `poradie` int(11) DEFAULT 0 AFTER `aktivny`");
+                }
+                
+                // Skopírujme dáta
+                foreach ($rows as $row) {
+                    // Skontrolujme či záznam už existuje
+                    $exists = $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}cl_typy_listkov` WHERE id = %d",
+                        $row['id']
+                    ));
+                    
+                    if (!$exists) {
+                        // Pridáme stĺpec poradie ak neexistuje v starej tabuľke
+                        if (empty($stary_poradie) && !isset($row['poradie'])) {
+                            $row['poradie'] = 0;
+                        }
+                        $wpdb->insert($wpdb->prefix . 'cl_typy_listkov', $row);
+                    }
+                }
+            }
+        }
+        
         // Kontrola a vytvorenie tabuliek v správnom poradí
         $sql = [
-            // Tabuľka typov lístkov
+            // Tabuľka typov lístkov - explicitne zabezpečíme stĺpec poradie
             "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}cl_typy_listkov` (
                 id mediumint(9) NOT NULL AUTO_INCREMENT,
                 nazov varchar(100) NOT NULL,
                 text_listok varchar(200) NOT NULL,
                 cena decimal(10,2) NOT NULL,
                 aktivny boolean DEFAULT TRUE,
+                poradie int(11) DEFAULT 0,
                 vytvorene datetime DEFAULT CURRENT_TIMESTAMP,
                 aktualizovane datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY  (id)
@@ -265,6 +320,17 @@ class CestovneListky {
                 ],
                 ['%s', '%s']
             );
+        }
+        
+        // Pridanie stĺpca poradie ak neexistuje
+        $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+                                  WHERE TABLE_SCHEMA = '" . DB_NAME . "' 
+                                  AND TABLE_NAME = '{$wpdb->prefix}cl_typy_listkov'
+                                  AND COLUMN_NAME = 'poradie'");
+                                  
+        if (empty($row)) {
+            $wpdb->query("ALTER TABLE `{$wpdb->prefix}cl_typy_listkov` 
+                         ADD COLUMN `poradie` int(11) DEFAULT 0 AFTER `aktivny`");
         }
     }
 
@@ -369,11 +435,16 @@ class CestovneListky {
         if ($stranka === 'cl-polozky') {
             wp_enqueue_style('cl-admin', CL_ASSETS_URL . 'css/admin.css', [], CL_VERSION);
             wp_enqueue_style('cl-listky', CL_ASSETS_URL . 'css/listky.css', [], CL_VERSION);
+            
+            // Dôležité: jQuery ako závislosť musí byť ako pole
             wp_enqueue_script('cl-listky', CL_ASSETS_URL . 'js/listky.js', ['jquery'], CL_VERSION, true);
             
+            // Dôležité: Pridanie debug informácií pre lepšie hľadanie chýb
             wp_localize_script('cl-listky', 'cl_admin', [
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('cl_listky_nonce')
+                'nonce' => wp_create_nonce('cl_listky_nonce'),
+                'debug' => true,
+                'version' => CL_VERSION
             ]);
         }
         
@@ -465,10 +536,65 @@ class CestovneListky {
         if (!current_user_can('manage_options')) {
             wp_die('Nedostatočné oprávnenia');
         }
-        
+                
         require_once CL_INCLUDES_DIR . 'admin/pohlady/import-export.php';
+    }
+
+    public function logJavascriptError(): void {
+        if (!isset($_POST['error'])) {
+            wp_send_json_error('Chýba parameter error');
+            return;
+        }
+        
+        $error = sanitize_text_field($_POST['error']);
+        $url = isset($_POST['url']) ? sanitize_text_field($_POST['url']) : '';
+        $line = isset($_POST['line']) ? intval($_POST['line']) : 0;
+        $file = isset($_POST['file']) ? sanitize_text_field($_POST['file']) : '';
+        
+        $log_message = sprintf(
+            "[JavaScript Error] %s in %s at line %d (URL: %s)",
+            $error,
+            $file,
+            $line,
+            $url
+        );
+        
+        // Zápis do WordPress logu
+        error_log($log_message);
+        
+        // Zápis do vlastného logu
+        $spravca = new jadro\SpravcaSuborov();
+        $spravca->zapisDoLogu('JS_ERROR', [
+            'message' => $error,
+            'file' => $file,
+            'line' => $line,
+            'url' => $url,
+            'timestamp' => current_time('mysql')
+        ]);
+               
+        wp_send_json_success();
     }
 }
 
+/**
+ * Registrácia shortcode pre POS terminál
+ */
+function registruj_shortcode_terminal(): void {
+    add_shortcode('pos_terminal', 'cl_terminal_shortcode');
+}
+
+/**
+ * Funkcia pre shortcode POS terminálu
+ */
+function cl_terminal_shortcode(): string {
+    $terminal = new \CL\POS\Terminal();
+    ob_start();
+    $terminal->zobrazTerminal();
+    return ob_get_clean();
+}
+
+
+
+CestovneListky::ziskajInstanciu();// Inicializácia pluginu
 // Inicializácia pluginu
 CestovneListky::ziskajInstanciu();

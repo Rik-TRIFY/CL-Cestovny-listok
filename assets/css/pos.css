@@ -490,6 +490,8 @@
     align-items: center;
     padding: 0 15px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 10px !important; /* Zmenšené odsadenie */
+    border-bottom: 1px solid #e0e0e0; /* Jemná čiara pre lepšie vizuálne oddelenie */
 }
 
 .pos-logo {
@@ -525,41 +527,47 @@
     display: block;
 }
 
-/* Grid s produktmi */
+/* Grid s produktmi - odstránenie zbytočného paddingu s vyššou prioritou */
 .pos-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    padding: 15px;
+    grid-template-columns: repeat(3, 1fr) !important; /* Vždy 3 stĺpce */
+    gap: 8px !important;
+    padding: 0 !important; /* Odstránený padding s vyššou prioritou */
+    margin: 0 !important; /* Odstránenie prebytočných marginov */
+    box-sizing: border-box !important;
 }
 
-/* Tlačidlá produktov */
-.pos-product {
+/* Tlačidlá produktov - zväčšenie písma a odstránenie aspect-ratio s vyššou prioritou */
+.pos-product,
+.pos-product.cl-ticket-btn {
     background: var(--button-background, white);
     border-radius: 4px;
-    padding: 15px;
+    padding: 10px;
     text-align: center;
     cursor: pointer;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     transition: all 0.2s;
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    aspect-ratio: auto !important; /* Explicitne nastavíme auto */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 85px !important; /* Zväčšená minimálna výška */
+    height: auto !important;
+    width: 100% !important;
 }
 
-.pos-product:hover {
-    background: var(--button-hover, #e9ecef);
-    transform: translateY(-2px);
-}
-
+/* Zväčšené písmo pre názov a cenu s vyššou prioritou */
 .pos-product-name {
-    font-weight: bold;
-    margin-bottom: 8px;
+    font-weight: bold !important;
+    margin-bottom: 6px !important;
+    font-size: 18px !important; /* Zväčšenie písma */
+    line-height: 1.2 !important;
 }
 
 .pos-product-price {
-    color: var(--primary-color, #0073aa);
+    color: var(--primary-color, #0073aa) !important;
+    font-size: 17px !important; /* Zväčšenie písma */
+    font-weight: 500 !important;
 }
 
 /* Košík */
@@ -656,35 +664,35 @@
     margin-bottom: 15px;
 }
 
-/* Tlačidlo košíka */
+/* Tlačidlo košíka - odstránený bočný padding s vyššou prioritou */
 .pos-cart-button {
-    display: block;
-    width: calc(100% - 30px);
-    margin: 0 15px 15px 15px;
-    padding: 12px;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important; /* Odstránenie prebytočných marginov */
+    padding: 15px !important; /* Väčší vnútorný padding pre lepšiu klikateľnosť */
     background: var(--cart-background, #0073aa);
     color: var(--cart-text, white);
     border: none;
     border-radius: 4px;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 17px !important; /* Mierne zväčšený font */
     cursor: pointer;
     text-align: center;
     text-decoration: none;
+    box-sizing: border-box !important;
 }
 
-.pos-cart-button:hover {
-    background: #005d87;
-}
-
-/* Posledné pridané položky */
+/* Posledné pridané položky a košík - odstránený bočný padding s vyššou prioritou */
 .pos-recent-items {
     background: white;
-    margin: 0 15px;
-    padding: 10px 15px;
+    margin: 10px 0 !important; /* Konzistentné odsadenie */
+    padding: 15px !important; /* Väčší vnútorný padding */
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 10px;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 15px 0 15px 0 !important; /* Odsadenie hore a dole 15px */
 }
 
 .pos-recent-items h3 {
@@ -749,16 +757,43 @@
     background: #ddd;
 }
 
-/* Responzívnosť */
+/* Responzívnosť - upravená pre zachovanie 3 stĺpcov */
 @media (max-width: 768px) {
     .pos-grid {
-        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+    }
+    
+    .pos-product {
+        padding: 8px;
+    }
+    
+    .pos-product-name {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+    
+    .pos-product-price {
+        font-size: 15px;
     }
 }
 
 @media (max-width: 480px) {
     .pos-grid {
-        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    
+    .pos-product {
+        padding: 6px;
+        min-height: 75px !important; /* Zväčšená minimálna výška aj na malých obrazovkách */
+    }
+    
+    .pos-product-name {
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+    
+    .pos-product-price {
+        font-size: 13px;
     }
 }
 
@@ -774,4 +809,91 @@
     --text-color: var(--pos-text-color, #333);
     --border-color: #e0e0e0;
     --header-height: 50px;
+}
+
+/* Responzívnosť - upravená pre rôzne zariadenia, zachovávajúca 3 stĺpce */
+/* Malé obrazovky (mobilné telefóny) */
+@media (max-width: 480px) {
+    .pos-grid {
+        gap: 5px;
+        padding: 10px;
+    }
+    
+    .pos-product {
+        padding: 8px;
+        min-height: 75px !important; /* Zväčšená minimálna výška aj na malých obrazovkách */
+    }
+    
+    .pos-product-name {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+    
+    .pos-product-price {
+        font-size: 11px;
+    }
+}
+
+/* Stredné obrazovky (väčšie telefóny, malé tablety) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .pos-product {
+        min-height: 90px !important; /* Zväčšená výška na stredných obrazovkách */
+    }
+}
+
+/* Väčšie tablety */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .pos-product {
+        min-height: 90px;
+    }
+    
+    .pos-product-name {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+    
+    .pos-product-price {
+        font-size: 18px;
+    }
+}
+
+/* Veľké obrazovky */
+@media (min-width: 1025px) {
+    .pos-grid {
+        gap: 10px;
+    }
+    
+    .pos-product {
+        padding: 15px;
+        min-height: 100px;
+    }
+    
+    .pos-product-name {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+    
+    .pos-product-price {
+        font-size: 20px;
+    }
+}
+
+/* Overenie, že aj rodičovské kontajnery nemajú padding */
+#terminal-screen {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important; /* Použitie flexbox layoutu */
+    flex-direction: column !important; /* Stĺpcové usporiadanie */
+    gap: 10px !important; /* Zmenšený gap medzi prvkami */
+}
+
+/* Pridanie dodatočných oddeľovačov pre sekcie */
+#terminal-screen .pos-grid + .pos-recent-items {
+    margin-top: 0 !important; /* Odstránenie dodatočných marginov */
+}
+
+.pos-recent-items + .pos-cart-button {
+    margin-top: 0 !important; /* Odstránenie dodatočných marginov */
 }

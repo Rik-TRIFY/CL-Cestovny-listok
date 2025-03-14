@@ -259,10 +259,28 @@ document.addEventListener('DOMContentLoaded', function() {
     kosik.aktualizujPoslednePolozky();
     
     // Event listener pre dokončenie predaja
-    document.getElementById('checkout-btn').addEventListener('click', function() {
+    document.getElementById('checkout-btn')?.addEventListener('click', function() {
         kosik.dokonciPredaj();
     });
     
+    // Event listenery pre tlačidlá lístkov
+    document.querySelectorAll('.pos-product, .cl-ticket-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const nazov = this.dataset.nazov || this.querySelector('.pos-product-name').textContent;
+            const cena = parseFloat(this.dataset.cena || this.querySelector('.pos-product-price').textContent);
+            
+            console.log('Kliknuté na tlačidlo:', id, nazov, cena);
+            kosik.pridajPolozku(id, nazov, cena);
+            
+            // Vizuálna spätná väzba pri kliknutí
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        });
+    });
+
     // Event listenery pre produktové tlačidlá
     document.querySelectorAll('.pos-product').forEach(produkt => {
         produkt.addEventListener('click', function() {

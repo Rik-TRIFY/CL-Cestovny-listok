@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CL\Jadro;
+namespace CL\jadro;
 
 class Databaza {
     private $db_primary;
@@ -94,19 +94,39 @@ class Databaza {
         }
     }
 
-    public function nacitaj($query, $params = []): array {
-        $primary_data = $this->db_primary->get_results(
-            $this->db_primary->prepare($query, $params),
-            ARRAY_A
-        );
+    /**
+     * Načíta dáta z databázy
+     *
+     * @param string $query SQL dotaz s možnosťou použitia placeholderov
+     * @param array $params Parametre pre SQL dotaz
+     * @param string $output_type Typ výstupných dát (ARRAY_A, OBJECT)
+     * @return array|object[] Výsledky dotazu
+     */
+    public function nacitaj($query, $params = [], $output_type = ARRAY_A): array {
+        global $wpdb;
         
-        $backup_data = $this->db_backup->get_results(
-            $this->db_backup->prepare($query, $params),
-            ARRAY_A
-        );
-
-        // Hľadáme konkrétne rozdiely
-        $rozdiely = $this->najdiRozdiely($primary_data, $backup_data);
+        // Úprava dotazu - nahradenie CL- prefixu s prefixom WordPress
+        $query = str_replace('`CL-', '`' . $wpdb->prefix . 'cl_', $query);
+        
+        // Pripravíme dotaz s parametrami
+        if (!empty($params)) {
+            $prepared_query = $this->db_primary->prepare($query, $params);
+        } else {
+            $prepared_query = $query;
+        }
+        
+        // Získame dáta z primárnej DB
+        $primary_data = $this->db_primary->get_results($prepared_query, $output_type);
+        
+        // Pre kontrolu integrity získame dáta aj zo záložnej DB, ale len v ARRAY_A formáte
+        $backup_data = $this->db_backup->get_results($prepared_query, ARRAY_A);
+        
+        // Ak výstup nie je pole, pre porovnanie získame dáta aj v ARRAY_A formáte
+        $primary_data_array = ($output_type !== ARRAY_A) ? 
+            $this->db_primary->get_results($prepared_query, ARRAY_A) : $primary_data;
+        
+        // Hľadáme konkrétne rozdiely (len ak používame ARRAY_A výstup)
+        $rozdiely = $this->najdiRozdiely($primary_data_array, $backup_data);
         
         if (!empty($rozdiely)) {
             // Uložíme len problémové záznamy
@@ -125,8 +145,30 @@ class Databaza {
             });
         }
 
-        // Vždy vrátime dáta z primárnej DB aby systém fungoval
-        return $primary_data ?: [];
+        // Vždy vrátime dáta z primárnej DB
+        return $primary_data !== null ? $primary_data : [];
+    }
+
+    /**
+     * Načíta dáta z databázy ako asociatívne pole
+     *
+     * @param string $query SQL dotaz s možnosťou použitia placeholderov
+     * @param array $params Parametre pre SQL dotaz
+     * @return array Výsledky dotazu ako asociatívne pole
+     */
+    public function nacitajPole(string $query, array $params = []): array {
+        return $this->nacitaj($query, $params, ARRAY_A);
+    }
+
+    /**
+     * Načíta dáta z databázy ako objekty
+     *
+     * @param string $query SQL dotaz s možnosťou použitia placeholderov
+     * @param array $params Parametre pre SQL dotaz
+     * @return object[] Výsledky dotazu ako objekty
+     */
+    public function nacitajObjekty(string $query, array $params = []): array {
+        return $this->nacitaj($query, $params, OBJECT);
     }
 
     private function najdiRozdiely(array $primary, array $backup): array {
