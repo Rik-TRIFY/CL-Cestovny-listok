@@ -669,18 +669,17 @@
 .pos-item-qty {
     min-width: 30px;
     text-align: center;
-    font-weight: 500;
-    font-size: 16px;
+    font-weight: 700;
+    font-size: 18px;
 }
 
 /* Tlačidlá v košíku - nový dizajn */
 .pos-qty-btn {
-    width: auto;
-    min-width: 40px;
-    height: 35px;
-    border-radius: 4px;
+    width: 30px !important;
+    height: 30px;
+    border-radius: 0px !important;
     border: none;
-    background: var(--primary-color, #2271b1);
+    background: #2271b1 !important;
     color: white;
     cursor: pointer;
     font-size: 16px;
@@ -689,6 +688,16 @@
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s;
+}
+
+.pos-qty-btn.plus {
+    background: #139043 !important;
+    color: white;
+}
+
+.pos-qty-btn.minus {
+    background: #903b13 !important;
+    color: white;
 }
 
 .pos-qty-btn:hover {

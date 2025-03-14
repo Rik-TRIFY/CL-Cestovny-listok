@@ -2,9 +2,29 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Upravíme viewport meta tag -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>POS Terminál</title>
     <style>
+        /* Na začiatok style sekcie pridáme tieto pravidlá */
+        html, body {
+            touch-action: manipulation;
+            -ms-touch-action: manipulation;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        
+        /* Zabránenie označovaniu textu */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
         :root {
             --background-color: #f5f5f5;
             --primary-color: #0073aa;
@@ -515,6 +535,9 @@
                         this.recentItems.pop();
                     }
                     
+                    // Uložíme do localStorage
+                    localStorage.setItem('posRecentItems', JSON.stringify(this.recentItems));
+                    
                     // Aktualizácia zobrazenia
                     this.updateRecentDisplay();
                 },
@@ -602,8 +625,9 @@
                         this.renderCartItems();
                     }
                     
-                    // Uložíme košík do localStorage
+                    // Uložíme košík a posledné položky do localStorage
                     localStorage.setItem('posCart', JSON.stringify(this.items));
+                    localStorage.setItem('posRecentItems', JSON.stringify(this.recentItems));
                 },
                 
                 // Aktualizácia celkovej sumy
@@ -615,15 +639,22 @@
                 },
             };
             
-            // Načítanie košíka z localStorage ak existuje
+            // Načítanie košíka a posledných položiek z localStorage ak existujú
             try {
                 const savedCart = localStorage.getItem('posCart');
+                const savedRecentItems = localStorage.getItem('posRecentItems');
+                
                 if (savedCart) {
                     cart.items = JSON.parse(savedCart);
                     cart.updateDisplay();
                 }
+                
+                if (savedRecentItems) {
+                    cart.recentItems = JSON.parse(savedRecentItems);
+                    cart.updateRecentDisplay();
+                }
             } catch (e) {
-                console.error('Chyba pri načítaní košíka:', e);
+                console.error('Chyba pri načítaní dát:', e);
             }
             
             // Pridáme event listenery na produktové tlačidlá
